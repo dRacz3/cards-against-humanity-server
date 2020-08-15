@@ -1,34 +1,20 @@
 from rest_framework import serializers
 
-from cardstore.models import WhiteCard, BlackCard
+from cardstore.models import WhiteCard, BlackCard, DeckMetaData
 
 
-class WhiteCardSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    text = serializers.CharField()
-    deck = serializers.CharField()
-
-    def create(self, validated_data):
-        return WhiteCard.objects.create(**validated_data)
-
-    def update(self, instance: WhiteCard, validated_data):
-        instance.text = validated_data.get('text', instance.text)
-        instance.deck = validated_data.get('deck', instance.deck)
-        instance.save()
-        return instance
+class WhiteCardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WhiteCard
+        exclude = ['id']
 
 
-class BlackCardSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    text = serializers.CharField()
-    deck = serializers.CharField()
+class BlackCardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BlackCard
+        exclude = ['id']
 
-    def create(self, validated_data):
-        print(validated_data)
-        return BlackCard.objects.create(**validated_data)
-
-    def update(self, instance: WhiteCard, validated_data):
-        instance.text = validated_data.get('text', instance.text)
-        instance.deck = validated_data.get('deck', instance.deck)
-        instance.save()
-        return instance
+class DeckMetaDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeckMetaData
+        exclude = ['id']

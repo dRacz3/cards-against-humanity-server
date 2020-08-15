@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from cardstore.models import WhiteCard, BlackCard
+from cardstore.models import WhiteCard, BlackCard, DeckMetaData
 
 class CardAdmin(admin.ModelAdmin):
     fieldsets = [
@@ -11,3 +11,4 @@ class CardAdmin(admin.ModelAdmin):
 
 admin.site.register(WhiteCard, CardAdmin)
 admin.site.register(BlackCard, CardAdmin)
+admin.site.register(DeckMetaData)

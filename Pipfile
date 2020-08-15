@@ -10,6 +10,7 @@ django = "*"
 djangorestframework = "*"
 markdown = "*"
 django-filter = "*"
+requests = "*"
 
 [requires]
 python_version = "3.6"
