@@ -4,9 +4,9 @@ from cardstore.models import WhiteCard, BlackCard
 
 class CardAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None, {'fields': ['card_text']}),
+        (None, {'fields': ['text', 'deck', 'icon']}),
     ]
-    list_display = ('card_text', 'package')
+    list_display = ('text', 'deck', 'icon')
 
 
 admin.site.register(WhiteCard, CardAdmin)
