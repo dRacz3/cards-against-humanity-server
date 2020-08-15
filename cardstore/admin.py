@@ -1,8 +1,13 @@
 from django.contrib import admin
 
-
-# Register your models here.
 from cardstore.models import WhiteCard, BlackCard
 
-admin.site.register(WhiteCard)
-admin.site.register(BlackCard)
+class CardAdmin(admin.ModelAdmin):
+    fieldsets = [
+        (None, {'fields': ['card_text']}),
+    ]
+    list_display = ('card_text', 'package')
+
+
+admin.site.register(WhiteCard, CardAdmin)
+admin.site.register(BlackCard, CardAdmin)
