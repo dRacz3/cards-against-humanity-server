@@ -7,6 +7,7 @@ class CardAdmin(admin.ModelAdmin):
         (None, {'fields': ['text', 'deck', 'icon']}),
     ]
     list_display = ('text', 'deck', 'icon')
+    list_filter = ['deck']
 
 class BlackCardAdmin(admin.ModelAdmin):
     fieldsets = [
