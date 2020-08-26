@@ -4,6 +4,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+import random
 from cardstore.models import WhiteCard, BlackCard
 from cardstore.api.serializers import WhiteCardSerializer, BlackCardSerializer
 
@@ -82,3 +83,12 @@ class BlackCardDetailsApiView(APIView):
         card = self.getObject(pk)
         card.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DrawNWhiteCardsApiVeiw(APIView):
+    def get(self, request, amount):
+        #TODO: select based on categories..
+        items = WhiteCard.objects.all()
+        random_cards = random.sample(list(items), amount)
+        serializer = WhiteCardSerializer(random_cards, many=True)
+        return Response(serializer.data)
