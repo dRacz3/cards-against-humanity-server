@@ -1,8 +1,10 @@
 import json
 import logging
-from asgiref.sync import sync_to_async
+from asgiref.sync import sync_to_async, async_to_sync
 from channels.generic.websocket import AsyncWebsocketConsumer
 from cah_rules.GameSession import CAH_GameSession, CAH_GAME_SESSIONS
+
+
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -11,15 +13,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         START = 'start'
         DRAW = 'draw'
         SUBMIT = '__submit__'
+        END_ROUND = '__endround__'
+        SELECT_WINNER = '__selectwinner__'
 
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.user_name = self.scope['url_route']['kwargs']['user_name']
         self.logger = logging.getLogger(self.room_name)
-        if self.room_name not in CAH_GAME_SESSIONS.keys():
-            self.logger.info(f"Creating session for room name: {self.room_name}")
-            CAH_GAME_SESSIONS[self.room_name] = CAH_GameSession(f"{self.room_name}")
         self.room_group_name = 'chat_%s' % self.room_name
+        self.eventDispatcher = AsnycEventDispatcher(self.channel_layer, self.room_group_name)
 
         # Join room group
         await self.channel_layer.group_add(
@@ -27,7 +29,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
+        if self.room_name not in CAH_GAME_SESSIONS.keys():
+            self.logger.info(f"Creating session for room name: {self.room_name}")
+            CAH_GAME_SESSIONS[self.room_name] = CAH_GameSession(f"{self.room_name}", self.eventDispatcher)
         await sync_to_async(CAH_GAME_SESSIONS[self.room_name].addNewUser)(self.user_name)
+
         await self.accept()
 
         await self.channel_layer.group_send(
@@ -37,6 +43,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': f"{self.user_name} has joined the game..."
             }
         )
+
 
     async def disconnect(self, close_code):
         self.logger.warning(f"{self.user_name} has disconnected... removing from game")
@@ -76,15 +83,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
             cards = card_content.split('|')
             self.logger.info(f"Cards texts {cards}")
             await sync_to_async(CAH_GAME_SESSIONS[self.room_name].submit_user_card)(self.user_name, cards)
+        elif (self.AcceptedCommands.END_ROUND in message):
+            self.logger.info("Ending round...")
+            await sync_to_async(CAH_GAME_SESSIONS[self.room_name].endRound)()
+        elif (self.AcceptedCommands.SELECT_WINNER in message):
+            start_index = message.find(self.AcceptedCommands.SELECT_WINNER) + len(self.AcceptedCommands.SELECT_WINNER) + 1
+            winner_name = message[start_index:]
+            self.logger.info(f"Selecting winner.. winner is: {winner_name}")
+            await sync_to_async(CAH_GAME_SESSIONS[self.room_name].selectWinner)(winner_name)
         else:
-            # Send message to room group
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'chat_message',
-                    'message': message
-                }
-            )
+            await self.broadcast_to_group(message)
+
+    async def broadcast_to_group(self, message : str, type = 'chat_message'):
+        print(f"Broadcasting message: {message}")
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': type,
+                'message': message
+            }
+        )
 
     async def draw_cards_for_everyone(self):
         await self.channel_layer.group_send(
@@ -121,3 +139,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'message': message
         }))
+
+
+class AsnycEventDispatcher:
+    def __init__(self, channel_layer, room_name):
+        self.channel_layer = channel_layer
+        self.room_group_name = room_name
+        self.logger = None
+
+    def setLogger(self, logger):
+        self.logger = logger
+
+    def emit(self, message, type = 'chat_message'):
+        if self.logger is not None:
+            self.logger.info(f"[{type}][{message}]")
+        async_to_sync(self.channel_layer.group_send)(
+            self.room_group_name,
+            {
+                'type': type,
+                'message': f"{message}"
+            }
+        )

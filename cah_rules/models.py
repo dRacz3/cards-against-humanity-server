@@ -44,6 +44,7 @@ class SingleRound:
     def select_winner(self, player: Player):
         self.winner = player
 
+
     def winning_text(self):
         winner_submission = self.submissions[self.winner]
         #TODO... parse it
