@@ -83,7 +83,7 @@ class CAH_GameSession:
 
     def selectWinner(self, player_name: str ):
         winnerPlayer = self.session_player_data[player_name]
-        self.broadcast_handler.emit(f"The TZAR has selected the best! It is: {winnerPlayer}")
+        self.broadcast_handler.emit(f"The TZAR has selected the best! It is: {winnerPlayer.name}")
         self.current_round.select_winner(winnerPlayer)
         self.endRound()
 
@@ -109,7 +109,7 @@ class CAH_GameSession:
         # TODO: remove submitted cards properly
         for player, submissions in self.current_round.submissions.items():
             for submitted_card in submissions:
-                self.logger.info(f"Removing sumbitted card : <{submitted_card}> from {player}")
+                self.logger.info(f"Removing sumbitted card : <{submitted_card}> from {player.name}")
                 self.session_player_data[player.name].cards_in_hand.remove(submitted_card)
 
         self.current_card_tzar = self.session_player_data[self.current_round.winner.name]
