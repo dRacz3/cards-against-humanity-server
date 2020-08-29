@@ -4,6 +4,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
+        self.user_name = self.scope['url_route']['kwargs']['user_name']
         self.room_group_name = 'chat_%s' % self.room_name
 
         # Join room group
@@ -14,7 +15,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'chat_message',
+                'message': f"{self.user_name} has joined the chat..."
+            }
+        )
+
     async def disconnect(self, close_code):
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'chat_message',
+                'message': f"{self.user_name} has left the chat..."
+            }
+        )
+
         # Leave room group
         await self.channel_layer.group_discard(
             self.room_group_name,
