@@ -9,6 +9,8 @@
     {{ room_name|json_script:"room-name" }}
     {{ user_name|json_script:"user-name" }}
 
+    You are currently in the room: [{{room_name}}]<br>
+
 
     <textarea id="chat-log" cols="100" rows="20"></textarea><br>
     <input id="chat-message-input" type="text" size="100"><br>
