@@ -129,12 +129,26 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 ASGI_APPLICATION = "onlinegame.routing.application"
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": ["redis://:uHCGWDexNfSTiwPm2t53inbODj0XsYks@redis-16486.c8.us-east-1-3.ec2.cloud.redislabs.com:16486"],
-            "symmetric_encryption_keys": [SECRET_KEY],
+
+use_redis = False
+if use_redis:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": ["redis://:uHCGWDexNfSTiwPm2t53inbODj0XsYks@redis-16486.c8.us-east-1-3.ec2.cloud.redislabs.com:16486"],
+                "symmetric_encryption_keys": [SECRET_KEY],
+            },
         },
-    },
-}
+    }
+
+else:
+    print("""
+Using in InMemoryChannelLayer
+Not for Production Use. In-memory channel layers operate each process as a separate layer, which means no cross-process messaging is possible. 
+As the core value of channel layers to provide distributed messaging, in-memory usage will result in sub-optimal performance and data-loss in a multi-instance environment.""")
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer"
+        }
+    }
