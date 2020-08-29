@@ -12,6 +12,8 @@ markdown = "*"
 django-filter = "*"
 requests = "*"
 django-cors-headers = "*"
+channels = "*"
+channels-redis = "*"
 
 [requires]
 python_version = "3.6"

@@ -27,7 +27,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', '10.0.2.2']
+ALLOWED_HOSTS = ['0.0.0.0', '10.0.2.2', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -41,7 +41,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'cardstore'
+    'cardstore',
+    'channels',
+    'game_engine'
 ]
 
 MIDDLEWARE = [
@@ -125,3 +127,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
+ASGI_APPLICATION = "onlinegame.routing.application"
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": ["redis://:uHCGWDexNfSTiwPm2t53inbODj0XsYks@redis-16486.c8.us-east-1-3.ec2.cloud.redislabs.com:16486"],
+            "symmetric_encryption_keys": [SECRET_KEY],
+        },
+    },
+}
