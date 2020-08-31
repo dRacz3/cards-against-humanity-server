@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/3.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
-
+import logging
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -152,3 +152,7 @@ As the core value of channel layers to provide distributed messaging, in-memory 
             "BACKEND": "channels.layers.InMemoryChannelLayer"
         }
     }
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(name)s][%(asctime)s][%(levelname)s][%(funcName)s] %(message)s')

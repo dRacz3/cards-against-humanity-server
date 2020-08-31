@@ -3,8 +3,7 @@ import logging
 from asgiref.sync import sync_to_async, async_to_sync
 from channels.generic.websocket import AsyncWebsocketConsumer
 from cah_rules.GameSession import CAH_GameSession, CAH_GAME_SESSIONS
-
-
+from common.IEventDispatcher import IEventDispatcher
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -21,7 +20,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.user_name = self.scope['url_route']['kwargs']['user_name']
         self.logger = logging.getLogger(self.room_name)
         self.room_group_name = 'chat_%s' % self.room_name
-        self.eventDispatcher = AsnycEventDispatcher(self.channel_layer, self.room_group_name)
+        self.eventDispatcher = AsyncGameEventDispatcher(self.channel_layer, self.room_group_name)
 
         # Join room group
         await self.channel_layer.group_add(
@@ -69,30 +68,32 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = text_data_json['message']
-
-        if (self.AcceptedCommands.LS in message):
-            await self.list_players()
-        elif (self.AcceptedCommands.DRAW in message):
-            await self.draw_cards_for_everyone()
-        elif(self.AcceptedCommands.START in message):
-            await sync_to_async(CAH_GAME_SESSIONS[self.room_name].startGame)()
-        elif(self.AcceptedCommands.SUBMIT in message):
-            self.logger.info(f"Submission: {message}")
-            start_index = message.find(self.AcceptedCommands.SUBMIT) + len(self.AcceptedCommands.SUBMIT) + 1
-            card_content = message[start_index:]
-            cards = card_content.split('|')
-            self.logger.info(f"Cards texts {cards}")
-            await sync_to_async(CAH_GAME_SESSIONS[self.room_name].submit_user_card)(self.user_name, cards)
-        elif (self.AcceptedCommands.END_ROUND in message):
-            self.logger.info("Ending round...")
-            await sync_to_async(CAH_GAME_SESSIONS[self.room_name].endRound)()
-        elif (self.AcceptedCommands.SELECT_WINNER in message):
-            start_index = message.find(self.AcceptedCommands.SELECT_WINNER) + len(self.AcceptedCommands.SELECT_WINNER) + 1
-            winner_name = message[start_index:]
-            self.logger.info(f"Selecting winner.. winner is: {winner_name}")
-            await sync_to_async(CAH_GAME_SESSIONS[self.room_name].selectWinner)(winner_name)
-        else:
-            await self.broadcast_to_group(message)
+        try:
+            if (self.AcceptedCommands.LS in message):
+                await self.list_players()
+            elif (self.AcceptedCommands.DRAW in message):
+                await self.draw_cards_for_everyone()
+            elif(self.AcceptedCommands.START in message):
+                await sync_to_async(CAH_GAME_SESSIONS[self.room_name].startGame)()
+            elif(self.AcceptedCommands.SUBMIT in message):
+                self.logger.info(f"Submission: {message}")
+                start_index = message.find(self.AcceptedCommands.SUBMIT) + len(self.AcceptedCommands.SUBMIT) + 1
+                card_content = message[start_index:]
+                cards = card_content.split('|')
+                self.logger.info(f"Cards texts {cards}")
+                await sync_to_async(CAH_GAME_SESSIONS[self.room_name].submit_user_card)(self.user_name, cards)
+            elif (self.AcceptedCommands.END_ROUND in message):
+                self.logger.info("Ending round...")
+                await sync_to_async(CAH_GAME_SESSIONS[self.room_name].endRound)()
+            elif (self.AcceptedCommands.SELECT_WINNER in message):
+                start_index = message.find(self.AcceptedCommands.SELECT_WINNER) + len(self.AcceptedCommands.SELECT_WINNER) + 1
+                winner_name = message[start_index:]
+                self.logger.info(f"Selecting winner.. winner is: {winner_name}")
+                await sync_to_async(CAH_GAME_SESSIONS[self.room_name].selectWinner)(winner_name)
+            else:
+                await self.broadcast_to_group(message)
+        except Exception as e:
+            await self.broadcast_to_group(f"Error! + {e}")
 
     async def broadcast_to_group(self, message : str, type = 'chat_message'):
         print(f"Broadcasting message: {message}")
@@ -140,9 +141,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message': message
         }))
 
+    async def game_event(self, event):
+        message = event['message']
+        event_name = event["event_name"]
 
-class AsnycEventDispatcher:
-    def __init__(self, channel_layer, room_name):
+        # Send message to WebSocket
+        await self.send(text_data=json.dumps({
+            'event_name' : event_name,
+            'message': message
+        }))
+
+
+
+class AsyncGameEventDispatcher(IEventDispatcher):
+    def __init__(self, channel_layer : str, room_name : str):
+        super().__init__()
         self.channel_layer = channel_layer
         self.room_group_name = room_name
         self.logger = None
@@ -150,13 +163,14 @@ class AsnycEventDispatcher:
     def setLogger(self, logger):
         self.logger = logger
 
-    def emit(self, message, type = 'chat_message'):
+    def emit(self, message, event_name):
         if self.logger is not None:
-            self.logger.info(f"[{type}][{message}]")
+            self.logger.info(f"[{event_name}][{message}]")
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name,
             {
-                'type': type,
-                'message': f"{message}"
+                'type': 'game_event',
+                'event_name' : event_name,
+                'message': message
             }
         )

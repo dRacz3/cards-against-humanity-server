@@ -4,13 +4,15 @@ from cardstore.models import WhiteCard, BlackCard
 
 
 class Player:
+
     def __init__(self, name):
         self.name = name
         self.points = 0
         self.cards_in_hand: List[WhiteCard] = []
 
     def __str__(self):
-        return f"Player [{self.name}], Points: {self.points}, Currently holding cards ({len(self.cards_in_hand)}): {self.cards_in_hand}"
+        cards_tablestr = ''.join([str(card) + '\n' for card in self.cards_in_hand])
+        return f"Player [{self.name}], Points: {self.points}, Currently holding cards ({len(self.cards_in_hand)})\n{cards_tablestr}"
 
     def __repr__(self):
         return self.__str__()
@@ -26,7 +28,7 @@ class SingleRound:
         self.players.remove(tzar)
         self.tzar = tzar
         self.active_black_card = active_black_card
-        self.winner : Player= None
+        self.winner: Player = None
         self.submissions: Dict[Player, List[WhiteCard]] = {}
         for player in self.players:
             self.submissions[player] = []
@@ -44,8 +46,14 @@ class SingleRound:
     def select_winner(self, player: Player):
         self.winner = player
 
+    def remove_player(self, player : Player):
+        if player in self.players:
+            self.players.remove(player)
+        elif self.tzar == player:
+            self.logger.warning(f"Tzar ({player}) has disconnected")
+            self.tzar = None
 
     def winning_text(self):
         winner_submission = self.submissions[self.winner]
-        #TODO... parse it
+        # TODO... parse it
         return f"Winner name is {self.winner.name}. Result : {self.active_black_card.text}, with submitted White cards: {winner_submission}"
