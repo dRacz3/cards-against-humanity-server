@@ -2,7 +2,7 @@ import json
 import logging
 from asgiref.sync import sync_to_async, async_to_sync
 from channels.generic.websocket import AsyncWebsocketConsumer
-from cah_rules.GameSession import CAH_GameSession, CAH_GAME_SESSIONS
+from cah_rules.GameSession import CAH_GameSession, CAH_GAME_SESSIONS, GameEvents
 from common.IEventDispatcher import IEventDispatcher
 
 
@@ -31,18 +31,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if self.room_name not in CAH_GAME_SESSIONS.keys():
             self.logger.info(f"Creating session for room name: {self.room_name}")
             CAH_GAME_SESSIONS[self.room_name] = CAH_GameSession(f"{self.room_name}", self.eventDispatcher)
-        await sync_to_async(CAH_GAME_SESSIONS[self.room_name].addNewUser)(self.user_name)
+        failed_to_add = await sync_to_async(CAH_GAME_SESSIONS[self.room_name].addNewUser)(self.user_name)
+        if not failed_to_add:
+            await self.accept()
 
-        await self.accept()
-
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': f"{self.user_name} has joined the game..."
-            }
-        )
-
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'game_event',
+                    'event_name': GameEvents.PLAYER_CONNECTED.name,
+                    'message': f"Added new player: {self.user_name}"
+                }
+            )
 
     async def disconnect(self, close_code):
         self.logger.warning(f"{self.user_name} has disconnected... removing from game")
@@ -67,15 +67,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # Receive message from WebSocket
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        message = text_data_json['message']
+        self.logger.info(f"Received: {text_data_json}")
         try:
+            message = text_data_json['message']
             if (self.AcceptedCommands.LS in message):
                 await self.list_players()
             elif (self.AcceptedCommands.DRAW in message):
                 await self.draw_cards_for_everyone()
-            elif(self.AcceptedCommands.START in message):
+            elif (self.AcceptedCommands.START in message):
                 await sync_to_async(CAH_GAME_SESSIONS[self.room_name].startGame)()
-            elif(self.AcceptedCommands.SUBMIT in message):
+            elif (self.AcceptedCommands.SUBMIT in message):
                 self.logger.info(f"Submission: {message}")
                 start_index = message.find(self.AcceptedCommands.SUBMIT) + len(self.AcceptedCommands.SUBMIT) + 1
                 card_content = message[start_index:]
@@ -86,16 +87,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.logger.info("Ending round...")
                 await sync_to_async(CAH_GAME_SESSIONS[self.room_name].endRound)()
             elif (self.AcceptedCommands.SELECT_WINNER in message):
-                start_index = message.find(self.AcceptedCommands.SELECT_WINNER) + len(self.AcceptedCommands.SELECT_WINNER) + 1
+                start_index = message.find(self.AcceptedCommands.SELECT_WINNER) + len(
+                    self.AcceptedCommands.SELECT_WINNER) + 1
                 winner_name = message[start_index:]
                 self.logger.info(f"Selecting winner.. winner is: {winner_name}")
                 await sync_to_async(CAH_GAME_SESSIONS[self.room_name].selectWinner)(winner_name)
             else:
                 await self.broadcast_to_group(message)
         except Exception as e:
+            self.logger.info(f"Error! {e}")
             await self.broadcast_to_group(f"Error! + {e}")
 
-    async def broadcast_to_group(self, message : str, type = 'chat_message'):
+    async def broadcast_to_group(self, message: str, type='chat_message'):
         print(f"Broadcasting message: {message}")
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -147,14 +150,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         # Send message to WebSocket
         await self.send(text_data=json.dumps({
-            'event_name' : event_name,
+            'event_name': event_name,
             'message': message
         }))
 
 
-
 class AsyncGameEventDispatcher(IEventDispatcher):
-    def __init__(self, channel_layer : str, room_name : str):
+    def __init__(self, channel_layer: str, room_name: str):
         super().__init__()
         self.channel_layer = channel_layer
         self.room_group_name = room_name
@@ -170,7 +172,7 @@ class AsyncGameEventDispatcher(IEventDispatcher):
             self.room_group_name,
             {
                 'type': 'game_event',
-                'event_name' : event_name,
+                'event_name': event_name,
                 'message': message
             }
         )

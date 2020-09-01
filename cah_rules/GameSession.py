@@ -55,20 +55,24 @@ class CAH_GameSession:
         current_tzar = self.session_player_data[random.sample(list(self.session_player_data.keys()), 1)[0]]
         self.current_card_tzar = current_tzar
         self.emit_event(f"==== GAME HAS STARTED, current TZAR is : {self.current_card_tzar} ==== ",
-                                    event_name=GameEvents.LOG_INFO.name)
+                        event_name=GameEvents.LOG_INFO.name)
         if self.current_round is not None:
             self.logger.warning("A whole new game has started!")
             self.round_history = []
         self.startNextRound()
 
     def addNewUser(self, player: str):
-        self.emit_event(f"Added new player: {player}", event_name=GameEvents.PLAYER_CONNECTED.name)
+        if player in self.session_player_data:
+            self.logger.info(f"{player} tried to joined multiple times. Ignored following requests.")
+            return False
+
         self.session_player_data[player] = Player(player)
 
         newCards = WhiteCard.objects.all()
         random_cards = random.sample(list(newCards), 10)
         for card in random_cards:
             self.white_card_deck.append(card)
+        return True
 
     def removeUser(self, player_name):
         try:
@@ -93,7 +97,7 @@ class CAH_GameSession:
     def submit_user_card(self, player_name, cards: List[str]):
         if self.current_round is None:
             self.emit_event("Cannot submit cards, as there is no active round!",
-                                        event_name=GameEvents.LOG_WARNING.name)
+                            event_name=GameEvents.LOG_WARNING.name)
             return
         # TODO : map cards somehow back..
         submitted_white_cards: List[WhiteCard] = []
@@ -104,7 +108,7 @@ class CAH_GameSession:
                     submitted_white_cards.append(card_in_hand)
         if (len(submitted_white_cards) != len(cards)):
             self.emit_event(f"No such card {cards} in the hand of the player [{player_name}].",
-                                        event_name=GameEvents.LOG_WARNING.name)
+                            event_name=GameEvents.LOG_WARNING.name)
             return
 
         self.current_round.player_submit(self.session_player_data[player_name], submitted_white_cards)
@@ -121,7 +125,7 @@ class CAH_GameSession:
 
     def startTzarVoting(self):
         self.emit_event(f"The Tzar <{self.current_card_tzar.name}> should select the winner...",
-                                    event_name=GameEvents.WINNER_SELECT_IN_PROGRESS.name)
+                        event_name=GameEvents.WINNER_SELECT_IN_PROGRESS.name)
 
     def startNextRound(self):
         if self.current_round is not None:
@@ -132,7 +136,9 @@ class CAH_GameSession:
                                          players=list(self.session_player_data.values()),
                                          tzar=self.current_card_tzar,
                                          active_black_card=flopped_black_card)
-        self.emit_event(f"New black card flopped\n{'='*30}\n{flopped_black_card}\n{'='*30}", event_name=GameEvents.ROUND_STARTS.name)
+        self.emit_event(
+            f"New black card flopped\n{'=' * len(str(flopped_black_card))}\n{flopped_black_card}\n{'=' * len(str(flopped_black_card))}",
+            event_name=GameEvents.ROUND_STARTS.name)
 
     def endRound(self):
         if self.current_round.winner is None:
@@ -147,7 +153,7 @@ class CAH_GameSession:
 
         self.current_card_tzar = self.session_player_data[self.current_round.winner.name]
         self.emit_event(f"Winner text is: {self.current_round.winning_text()}",
-                                    event_name=GameEvents.WINNER_SELECTED.name)
+                        event_name=GameEvents.WINNER_SELECTED.name)
 
 
 CAH_GAME_SESSIONS: Dict[str, CAH_GameSession] = {}
