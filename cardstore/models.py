@@ -29,3 +29,4 @@ class WhiteCard(models.Model):
 
     def __str__(self):
         return f"[{self.deck}] {self.text}"
+

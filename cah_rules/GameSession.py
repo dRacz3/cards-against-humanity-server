@@ -27,6 +27,8 @@ class GameEvents(Enum):
     LOG_WARNING = 9
     LOG_ERROR = 10
 
+    STATUS_BROADCAST = 11
+
 
 class CAH_GameSession:
 
@@ -155,5 +157,7 @@ class CAH_GameSession:
         self.emit_event(f"Winner text is: {self.current_round.winning_text()}",
                         event_name=GameEvents.WINNER_SELECTED.name)
 
+    def __str__(self):
+        return f"<Game Session, round: {len(self.round_history) + 1}, Tzar: {self.current_card_tzar}>\n Players are: {self.session_player_data}"
 
 CAH_GAME_SESSIONS: Dict[str, CAH_GameSession] = {}

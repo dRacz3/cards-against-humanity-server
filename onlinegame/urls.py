@@ -19,5 +19,9 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('cardstore.api.urls')),
-    path('game_engine/', include('game_engine.urls'))
+    path('game_engine_api/', include('game_engine.api.urls')),
+    path('game_engine/', include('game_engine.urls')),
+    path("api-auth/", include("rest_framework.urls")),
+    path("api/rest-auth/", include("rest_auth.urls")),
+    path("api/rest-auth/registration/", include("rest_auth.registration.urls"))
 ]

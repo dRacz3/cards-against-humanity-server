@@ -15,6 +15,10 @@ django-cors-headers = "*"
 channels = "*"
 channels-redis = "*"
 player = "*"
+tabulate = "*"
+django-allauth = "*"
+django-rest-auth = "*"
+pillow = "*"
 
 [requires]
 python_version = "3.6"

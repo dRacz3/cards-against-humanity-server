@@ -34,13 +34,24 @@ ALLOWED_HOSTS = ['0.0.0.0', '10.0.2.2', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     'corsheaders',
-    'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+
+    'rest_framework',
+    'rest_framework.authtoken',
+
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+
+    'rest_auth',
+    'rest_auth.registration',
+
     'cardstore',
     'channels',
     'game_engine'
@@ -156,3 +167,18 @@ As the core value of channel layers to provide distributed messaging, in-memory 
 logging.basicConfig(
     level=logging.INFO,
     format='[%(name)s][%(asctime)s][%(levelname)s][%(funcName)s] %(message)s')
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 5
+}
+
+SITE_ID = 1
+
+ACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_EMAIL_REQUIRED = (True)
