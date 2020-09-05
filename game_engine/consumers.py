@@ -2,8 +2,11 @@ import json
 import logging
 from asgiref.sync import sync_to_async, async_to_sync
 from channels.generic.websocket import AsyncWebsocketConsumer
+from django.db.models import QuerySet
+
 from cah_rules.GameSession import CAH_GameSession, CAH_GAME_SESSIONS, GameEvents
 from common.IEventDispatcher import IEventDispatcher
+from game_engine.models import GameSession, Profile
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -20,6 +23,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.user_name = self.scope['url_route']['kwargs']['user_name']
         self.logger = logging.getLogger(self.room_name)
+
+        def join_room(room_name, user, logger):
+            logger.info(f"User [{user}] joining room: {room_name}")
+
+            room : QuerySet= GameSession.objects.filter(session_id=room_name)
+            userPorfile = Profile.objects.filter(user=user)[0]
+
+            logger.info(f"Retrieved room: {room}, retrieved userProfile: {userPorfile}")
+
+            if not room.exists():
+               logger.info(f"Creating room: {room}")
+               session = GameSession.objects.create(session_id=room_name)
+               session.players.add(userPorfile)
+               session.save()
+            else:
+                room[0].players.add(userPorfile)
+
+        await sync_to_async(join_room)(self.room_name, self.scope["user"], self.logger)
+
+
         self.room_group_name = 'chat_%s' % self.room_name
         self.eventDispatcher = CAHGameEventDispatcher(self.channel_layer, self.room_name)
 
@@ -29,22 +52,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
-        if self.room_name not in CAH_GAME_SESSIONS.keys():
-            self.logger.info(f"Creating session for room name: {self.room_name}")
-            CAH_GAME_SESSIONS[self.room_name] = CAH_GameSession(f"{self.room_name}",
-                                                                self.eventDispatcher.asyncGameEventDispatcher)
-        failed_to_add = await sync_to_async(CAH_GAME_SESSIONS[self.room_name].addNewUser)(self.user_name)
-        if not failed_to_add:
-            await self.accept()
+        # if self.room_name not in CAH_GAME_SESSIONS.keys():
+        #     self.logger.info(f"Creating session for room name: {self.room_name}")
+        #     CAH_GAME_SESSIONS[self.room_name] = CAH_GameSession(f"{self.room_name}",
+        #                                                         self.eventDispatcher.asyncGameEventDispatcher)
+        #failed_to_add = await sync_to_async(CAH_GAME_SESSIONS[self.room_name].addNewUser)(self.user_name)
+        #if not failed_to_add:
+        await self.accept()
 
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'game_event',
-                    'event_name': GameEvents.PLAYER_CONNECTED.name,
-                    'message': f"Added new player: {self.user_name}"
-                }
-            )
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'game_event',
+                'event_name': GameEvents.PLAYER_CONNECTED.name,
+                'message': f"Added new player: {self.user_name}"
+            }
+        )
 
     async def disconnect(self, close_code):
         self.logger.warning(f"{self.user_name} has disconnected... removing from game")

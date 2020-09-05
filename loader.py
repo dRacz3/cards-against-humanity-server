@@ -11,10 +11,11 @@ for key in data['metadata'].keys():
     DeckMetaData.objects.create(id_name = key, **data['metadata'][key]).save()
 
 
-for key in data['white']:
+for key in data['white'][0:10]:
     WhiteCard.objects.create(**key).save()
 
-for key in data['black']:
+for key in data['black'][0:10]:
     BlackCard.objects.create(**key).save()
 
 print("Finished!")
+

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from game_engine.models import Profile, GameRound, GameRoom
+from game_engine.models import Profile, GameRound, GameSession, GameRoundProfileData
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -13,14 +13,27 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class GameRoundSerializer(serializers.ModelSerializer):
-    room = serializers.StringRelatedField(read_only=True)
+    session = serializers.StringRelatedField(read_only=True)
+    tzar = serializers.StringRelatedField(read_only=True)
+    active_black_card = serializers.StringRelatedField(read_only=True)
+
 
     class Meta:
         model = GameRound
         fields = '__all__'
 
 
-class GameRoomSerializer(serializers.ModelSerializer):
+class GameSessionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = GameRoom
+        model = GameSession
+        fields = "__all__"
+
+
+class GameRoundProfileDataSerializer(serializers.ModelSerializer):
+    round = serializers.StringRelatedField(read_only=True)
+    user_profile = serializers.StringRelatedField(read_only=True)
+    cards = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = GameRoundProfileData
         fields = "__all__"
