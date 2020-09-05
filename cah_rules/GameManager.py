@@ -9,12 +9,13 @@ from cardstore.models import BlackCard, WhiteCard
 from game_engine.models import User, Profile, GameSession, SessionDeck, SessionPlayerList, GameRound, \
     GameRoundProfileData
 
+
 class DeckFactory:
     def __init__(self):
         pass
 
     def get_white_cards(self, count: int):
-        #TODO: select based on categories..
+        # TODO: select based on categories..
         items = WhiteCard.objects.all()
         random_cards = random.sample(list(items), count)
         return random_cards
@@ -37,9 +38,9 @@ class GameManager:
             self.recently_created_session_ids.append(session_id)
             new_session = GameSession.objects.create(session_id=session_id)
             new_session.save()
-            new_deck : SessionDeck = SessionDeck.objects.create(session= new_session)
-            [new_deck.white_cards.add(card) for card in DeckFactory().get_white_cards(5)]
-            [new_deck.black_cards.add(card) for card in DeckFactory().get_black_cards(5)]
+            new_deck: SessionDeck = SessionDeck.objects.create(session=new_session)
+            [new_deck.white_cards.add(card) for card in DeckFactory().get_white_cards(50)]
+            [new_deck.black_cards.add(card) for card in DeckFactory().get_black_cards(50)]
             new_deck.save()
             return new_session
         else:
@@ -91,7 +92,7 @@ class GameRoundFactory():
 
     def createNewRound(self):
         rounds = GameRound.objects.filter(session=self.session).order_by('roundNumber')
-        deck = SessionDeck.objects.filter(session = self.session).first()
+        deck = SessionDeck.objects.filter(session=self.session).first()
 
         if not rounds.exists():
             roundNumber = 1
@@ -102,7 +103,6 @@ class GameRoundFactory():
             deck.black_cards.remove(rounds.last().active_black_card)
             deck.save()
 
-
         black_card = random.sample(list(deck.black_cards.all()), 1)[0]
 
         newRound = GameRound.objects.create(
@@ -111,8 +111,27 @@ class GameRoundFactory():
             tzar=tzar,
             active_black_card=black_card)
         active_players = self.players.profiles.exclude(user=tzar.user)
-        print(f"Active players are: {active_players}")
 
+        # Fill deck for players
+        for player in self.players.profiles.all():
+            expected_count = 10
+            #TODO: filter based on round + user -> get previous data, copy from there
+            previous_player_data = GameRoundProfileData.objects.filter(round = newRound)
+
+            if previous_player_data.exists():
+                print(f"The player owned {previous_player_data.first().cards.count()} cards.")
+            else:
+                available = list(deck.white_cards.all())
+                user_cards = random.sample(available, 10)
+                [deck.white_cards.remove(card) for card in user_cards]
+                deck.save()
+                print(f"{player} receives : {user_cards}")
+                print(f"remaining cards: {deck.white_cards.all()}")
+                new_data = GameRoundProfileData.objects.create(user_profile=player,
+                                                               current_points=0, round=newRound)
+                for card in user_cards:
+                    new_data.cards.add(card)
+                new_data.save()
 
         return newRound
 
