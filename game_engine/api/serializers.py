@@ -17,11 +17,9 @@ class GameRoundSerializer(serializers.ModelSerializer):
     tzar = serializers.StringRelatedField(read_only=True)
     active_black_card = serializers.StringRelatedField(read_only=True)
 
-
     class Meta:
         model = GameRound
         fields = '__all__'
-
 
 class GameSessionSerializer(serializers.ModelSerializer):
     class Meta:

@@ -14,7 +14,7 @@ application = ProtocolTypeRouter({
 
     "websocket": AuthMiddlewareStack(
         URLRouter([
-            url(r"^front(end)/$", consumers.ChatConsumer),
+            url(r"", consumers.ChatConsumer),
         ])
     ),
 

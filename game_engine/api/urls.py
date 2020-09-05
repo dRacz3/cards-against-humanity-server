@@ -5,7 +5,7 @@ from game_engine.api.views import ProfileViewSet, GameSessionViewSet, ProfileDat
 
 router = DefaultRouter()
 router.register(r"profiles", ProfileViewSet)
-router.register(r"rooms", GameSessionViewSet)
+router.register(r"sessions", GameSessionViewSet)
 router.register(r"gameroundprofiledata", GameRoundProfileDataViewSet)
 
 urlpatterns = [
@@ -13,5 +13,5 @@ urlpatterns = [
     path("session/<int:session_id>/profiles", ProfileDataBasedOnSessionDataViewSet.as_view(),
          name="session-profile-view"),
     path("session/<int:session_id>/rounds", GameRoundsBasedOnSessionsViewSet.as_view(), name="session-round-view"),
-    path("room/<int:pk>", GameSessionOperations.as_view(), name="session_ops")
+    path("session/<int:session_id>/ops/", GameSessionOperations.as_view(), name="session_ops")
 ]

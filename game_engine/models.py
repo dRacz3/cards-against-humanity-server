@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 
 from cardstore.models import WhiteCard, BlackCard
 
-
 class Profile(models.Model):
     user: User = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.CharField(max_length=240, blank=True)
@@ -18,10 +17,18 @@ class GameSession(models.Model):
     session_id = models.CharField(max_length=120, primary_key=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    has_started = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.session_id
+        return f"Session: {self.session_id}"
 
+
+class SessionPlayerList(models.Model):
+    profiles = models.ManyToManyField(Profile)
+    session = models.ForeignKey(GameSession, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"[{self.session.session_id}] {self.profiles.all()}"
 
 class GameRound(models.Model):
     roundNumber: int = models.PositiveIntegerField(validators=[MinValueValidator(1),
@@ -33,6 +40,13 @@ class GameRound(models.Model):
     def __str__(self):
         return f"Round {self.roundNumber}, Tzar: {self.tzar}"
 
+class SessionDeck(models.Model):
+    white_cards = models.ManyToManyField(WhiteCard)
+    black_cards = models.ManyToManyField(BlackCard)
+    session = models.ForeignKey(GameSession, on_delete=models.CASCADE, related_name="deck")
+
+    def __str__(self):
+        return f"Deck for session: {self.session.session_id}"
 
 class GameRoundProfileData(models.Model):
     user_profile: Profile = models.ForeignKey(Profile, on_delete=models.CASCADE)

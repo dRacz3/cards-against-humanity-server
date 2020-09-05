@@ -75,25 +75,27 @@ class GameRoundsBasedOnSessionsViewSet(generics.ListAPIView):
 
 
 class GameSessionOperations(APIView):
+    permission_classes = [IsAuthenticated]
 
-    def get_object(self, pk):
-        session = get_object_or_404(GameSession, pk=pk)
+    def get_object(self, session_id):
+        session = get_object_or_404(GameSession, pk=session_id)
         return session
 
-    def get(self, request, pk):
-        session = self.get_object(pk)
+    def get(self, request, session_id):
+        session = self.get_object(session_id)
         serializer = GameSessionSerializer(session)
         return Response(serializer.data)
 
-    def put(self, request, pk):
-        session: GameSession = self.get_object(pk)
-        user = request.user
-        userProfile = Profile.objects.filter(user=user)[0]
-        session.players.add(userProfile)
-        session.save()
+    def put(self, request, session_id):
+        session: GameSession = self.get_object(session_id)
+        if not session.has_started:
+            user = request.user
+            userProfile = Profile.objects.filter(user=user)[0]
+            session.playerlist.profiles.add(userProfile)
+
         return Response(f"Added {userProfile} to {session}", status=status.HTTP_200_OK)
 
-    def delete(self, request, pk):
-        article = self.get_object(pk)
+    def delete(self, request, session_id):
+        article = self.get_object(session_id)
         article.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
