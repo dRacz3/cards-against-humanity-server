@@ -52,12 +52,18 @@ class SessionDeck(models.Model):
     def __str__(self):
         return f"Deck for session: {self.session.session_id}"
 
-
 class GameRoundProfileData(models.Model):
     user_profile: Profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    cards = models.ManyToManyField(WhiteCard)
+    cards = models.ManyToManyField(WhiteCard, related_name="cards_held")
     current_points: int = models.PositiveIntegerField(validators=[MinValueValidator(0)])
     round: GameRound = models.ForeignKey(GameRound, on_delete=models.CASCADE, related_name="GameRoundProfileData")
 
     def __str__(self):
         return f"[{self.round.session.session_id}] [{self.round.roundNumber}] {self.user_profile.user.username} : {self.current_points}"
+
+class CardSubmission(models.Model):
+    submitted_white_cards = models.ManyToManyField(WhiteCard, related_name= "submitted_card_set")
+    connected_game_round_profile = models.OneToOneField(GameRoundProfileData, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Submission of {self.connected_game_round_profile.user_profile} : {self.submitted_white_cards.all()}"

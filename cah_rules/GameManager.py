@@ -1,10 +1,24 @@
+from typing import List
+
 from django.db.models import QuerySet
 import logging
 
 from cah_rules.game_round_factory import GameRoundFactory
 from cardstore.deck_operations import DeckFactory
+from cardstore.models import WhiteCard
 from game_engine.models import User, Profile, GameSession, SessionDeck, SessionPlayerList, GameRound, \
-    GameRoundProfileData
+    GameRoundProfileData, CardSubmission
+
+
+def reverse_search_cards_by_text(submitted_card_texts: List[str]) -> List[WhiteCard]:
+    wcs = []
+    for cardtext in submitted_card_texts:
+        returnedCard = WhiteCard.objects.filter(text=cardtext).first()
+        if returnedCard is not None:
+            wcs.append(returnedCard)
+        else:
+            raise ValueError(f"Could not find card with text: {cardtext}")
+    return wcs
 
 
 class GameManager:
@@ -52,12 +66,55 @@ class GameManager:
             self.logger.info("User is not authenticated")
             return False
 
-    def select_winner(self, user_name: str, session: GameSession):
+    def select_winner(self, card_text: str, session_id: str):
+        session = GameSession.objects.filter(session_id=session_id).first()
         last_round = GameRound.objects.filter(session=session).last()
-        winner_profile_data = GameRoundProfileData.objects.filter(round=last_round,
-                                                                  user_profile__user__username=user_name).first()
-        last_round.winner = winner_profile_data
-        last_round.save()
+        # TODO: Select winner card by text, find the person who submitted the card ->set profile as winner
+        # user_profile = Profile.objects.filter(user__username = user_name).first()
+        # if last_round is not None:
+        #     winner_profile_data : GameRoundProfileData = GameRoundProfileData.objects.filter(round=last_round,
+        #                                                               user_profile=user_profile).first()
+        #     last_round.winner = winner_profile_data.user_profile
+        #     last_round.save()
+        # else:
+        #     self.logger.error("You cannot select a winner, as the game has not started yet!")
+
+    def submit_cards(self, session_id, submitting_player, submitted_card_texts: List[str]):
+        last_round: GameRound = GameRound.objects.filter(session__session_id=session_id).last()
+        if last_round is not None:
+            if last_round.active_black_card.pick == len(submitted_card_texts):
+                profile_data_for_submitting_player: GameRoundProfileData = GameRoundProfileData.objects.filter(
+                    round=last_round,
+                    user_profile__user=submitting_player).first()
+                submission = self.retrieve_submission_for_round_data(profile_data_for_submitting_player)
+
+                submitted_cards = reverse_search_cards_by_text(submitted_card_texts)
+
+                #Check each card
+                for card in submitted_cards:
+                    # It must be in the player's hand
+                    if card in profile_data_for_submitting_player.cards.all():
+                        print(
+                            f"Player {profile_data_for_submitting_player.user_profile} has the card : {card}, submission accepted")
+                        submission.submitted_white_cards.add(card)
+                    else:
+                        raise Exception("Trying to add card to user that is not in their hand! Abort!")
+                    submission.save()
+                return True
+            else:
+                raise ValueError("Not enough cards submitted!")
+        else:
+            raise ValueError("Game has not started yet")
+
+    def retrieve_submission_for_round_data(self, profile_data_for_submitting_player):
+        submission = CardSubmission.objects.filter(
+            connected_game_round_profile=profile_data_for_submitting_player)
+        if not submission.exists():
+            submission: CardSubmission = CardSubmission.objects.create(
+                connected_game_round_profile=profile_data_for_submitting_player)
+        else:
+            raise Exception("Player has already submitted cards")
+        return submission
 
     def progressGame(self, session_id):
         session = GameSession.objects.filter(session_id=session_id).first()

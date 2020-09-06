@@ -68,43 +68,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     # Receive message from WebSocket
-    async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        self.logger.info(f"Received: {text_data_json}")
-        try:
-            message = text_data_json['message']
-            if('lofasz' in message):
-                await sync_to_async(CAHGameManager.progressGame)(self.room_name)
-            if (self.AcceptedCommands.LS in message):
-                await self.list_players()
-            if (self.AcceptedCommands.STATUS in message):
-                await self.broadcast_to_group(str(CAH_GAME_SESSIONS[self.room_name]))
-            elif (self.AcceptedCommands.DRAW in message):
-                await self.draw_cards_for_everyone()
-            elif (self.AcceptedCommands.START in message):
-                await sync_to_async(CAH_GAME_SESSIONS[self.room_name].startGame)()
-            elif (self.AcceptedCommands.SUBMIT in message):
-                self.logger.info(f"Submission: {message}")
-                start_index = message.find(self.AcceptedCommands.SUBMIT) + len(self.AcceptedCommands.SUBMIT) + 1
-                card_content = message[start_index:]
-                cards = card_content.split('|')
-                self.logger.info(f"Cards texts {cards}")
-                await sync_to_async(CAH_GAME_SESSIONS[self.room_name].submit_user_card)(self.user_name, cards)
-            elif (self.AcceptedCommands.END_ROUND in message):
-                self.logger.info("Ending round...")
-                await sync_to_async(CAH_GAME_SESSIONS[self.room_name].endRound)()
-            elif (self.AcceptedCommands.SELECT_WINNER in message):
-                start_index = message.find(self.AcceptedCommands.SELECT_WINNER) + len(
-                    self.AcceptedCommands.SELECT_WINNER) + 1
-                winner_name = message[start_index:]
-                self.logger.info(f"Selecting winner.. winner is: {winner_name}")
-                await sync_to_async(CAH_GAME_SESSIONS[self.room_name].selectWinner)(winner_name)
-            else:
-                await self.broadcast_to_group(message)
-        except Exception as e:
-            self.logger.info(f"Error! {e}")
-            await self.broadcast_to_group(f"Error! + {e}")
-
     async def broadcast_to_group(self, message: str, type='chat_message'):
         print(f"Broadcasting message: {message}")
         await self.channel_layer.group_send(
@@ -131,6 +94,31 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': 'Drawing cards has finished. Players will have their hands populated with cards'
             }
         )
+
+    async def receive(self, text_data):
+        text_data_json = json.loads(text_data)
+        self.logger.info(f"Received: {text_data_json}")
+        try:
+            message = text_data_json['message']
+            print(f"Processing: {message}")
+            if ('lofasz' in message):
+                await sync_to_async(CAHGameManager.progressGame)(self.room_name)
+            elif (self.AcceptedCommands.SUBMIT in message):
+                self.logger.info(f"Submission: {message}")
+                submitted_card_pks = message.split('|')[1:]
+                print(f"Submitted card pks: {submitted_card_pks}")
+                await sync_to_async(CAHGameManager.submit_cards)(self.room_name, self.scope["user"], submitted_card_pks)
+            elif (self.AcceptedCommands.SELECT_WINNER in message):
+                start_index = message.find(self.AcceptedCommands.SELECT_WINNER) + len(
+                    self.AcceptedCommands.SELECT_WINNER) + 1
+                winner_name = message[start_index:]
+                self.logger.info(f"Selecting winner.. winner is: {winner_name}")
+                await sync_to_async(CAHGameManager.select_winner)(winner_name, self.room_name)
+            else:
+                await self.broadcast_to_group(message)
+        except Exception as e:
+            self.logger.info(f"Error! {e}")
+            await self.broadcast_to_group(f"Error! + {e}")
 
     async def list_players(self):
         player_data = CAH_GAME_SESSIONS[self.room_name].session_player_data

@@ -19,7 +19,7 @@ class BlackCard(models.Model):
     pick = models.IntegerField()
 
     def __str__(self):
-        return f"[{self.deck}] {self.text}"
+        return f"<{self.id}>[{self.deck}] {self.text}"
 
 
 class WhiteCard(models.Model):
@@ -28,5 +28,5 @@ class WhiteCard(models.Model):
     deck = models.CharField(max_length=200)
 
     def __str__(self):
-        return f"[{self.deck}] {self.text}"
+        return f"<{self.id}> [{self.deck}] {self.text}"
 
