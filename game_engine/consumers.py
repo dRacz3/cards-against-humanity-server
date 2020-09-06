@@ -25,7 +25,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.user_name = self.scope['url_route']['kwargs']['user_name']
         self.logger = logging.getLogger(self.room_name)
 
-        user_add_success = await sync_to_async(CAHGameManager.addUserToSession)(self.room_name, self.scope["user"])
+        user_add_success = await sync_to_async(CAHGameManager.add_user_to_session)(self.room_name, self.scope["user"])
 
         self.room_group_name = 'chat_%s' % self.room_name
         self.eventDispatcher = CAHGameEventDispatcher(self.channel_layer, self.room_name)
@@ -102,7 +102,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             message = text_data_json['message']
             print(f"Processing: {message}")
             if ('lofasz' in message):
-                await sync_to_async(CAHGameManager.progressGame)(self.room_name)
+                await sync_to_async(CAHGameManager.progress_game)(self.room_name)
             elif (self.AcceptedCommands.SUBMIT in message):
                 self.logger.info(f"Submission: {message}")
                 submitted_card_pks = message.split('|')[1:]
@@ -111,9 +111,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             elif (self.AcceptedCommands.SELECT_WINNER in message):
                 start_index = message.find(self.AcceptedCommands.SELECT_WINNER) + len(
                     self.AcceptedCommands.SELECT_WINNER) + 1
-                winner_name = message[start_index:]
-                self.logger.info(f"Selecting winner.. winner is: {winner_name}")
-                await sync_to_async(CAHGameManager.select_winner)(winner_name, self.room_name)
+                winning_submission = message[start_index:]
+                self.logger.info(f"Selecting winner.. winner is submission with id: {winning_submission}")
+                await sync_to_async(CAHGameManager.select_winner)(winning_submission, self.room_name)
             else:
                 await self.broadcast_to_group(message)
         except Exception as e:

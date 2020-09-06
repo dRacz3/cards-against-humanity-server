@@ -1,3 +1,5 @@
+from typing import Union
+
 from rest_framework import generics, mixins, viewsets, status
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import get_object_or_404
@@ -73,6 +75,7 @@ class GameRoundsBasedOnSessionsViewSet(generics.ListAPIView):
         else:
             return []
 
+
 class CardSubmissionsRoundsViewSet(generics.ListAPIView):
     serializer_class = CardSubmissionSerializer
     permission_classes = [IsAuthenticated]
@@ -82,9 +85,28 @@ class CardSubmissionsRoundsViewSet(generics.ListAPIView):
         if session_id is not None:
             round = GameRound.objects.filter(session__session_id=session_id).last()
             if round is not None:
-                return CardSubmission.objects.filter(connected_game_round_profile__round = round)
+                return CardSubmission.objects.filter(connected_game_round_profile__round=round)
         else:
             return []
+
+
+class SessionStateView(APIView):
+    def get(self, request, session_id):
+        session: Union[GameSession, None] = GameSession.objects.filter(session_id=session_id).first()
+
+        data = {
+            'has_started': 'no',
+            'last_round:': []
+        }
+
+        if session:
+            if session.has_started:
+                data['has_started'] = 'yes'
+            rounds = GameRound.objects.filter(session=session).last()
+            srl = GameRoundSerializer(rounds)
+            data['last_round'] = srl.data
+        return Response(data, status=status.HTTP_200_OK)
+
 
 class GameSessionOperations(APIView):
     permission_classes = [IsAuthenticated]
