@@ -7,8 +7,8 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 
 from game_engine.api.serializers import GameSessionSerializer, ProfileSerializer, GameRoundProfileDataSerializer, \
-    GameRoundSerializer
-from game_engine.models import Profile, GameSession, GameRoundProfileData, GameRound
+    GameRoundSerializer, CardSubmissionSerializer
+from game_engine.models import Profile, GameSession, GameRoundProfileData, GameRound, CardSubmission
 
 
 class ProfileViewSet(mixins.UpdateModelMixin,
@@ -73,6 +73,18 @@ class GameRoundsBasedOnSessionsViewSet(generics.ListAPIView):
         else:
             return []
 
+class CardSubmissionsRoundsViewSet(generics.ListAPIView):
+    serializer_class = CardSubmissionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        session_id = self.kwargs["session_id"]
+        if session_id is not None:
+            round = GameRound.objects.filter(session__session_id=session_id).last()
+            if round is not None:
+                return CardSubmission.objects.filter(connected_game_round_profile__round = round)
+        else:
+            return []
 
 class GameSessionOperations(APIView):
     permission_classes = [IsAuthenticated]

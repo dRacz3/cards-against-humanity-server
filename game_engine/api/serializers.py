@@ -1,9 +1,8 @@
 from rest_framework import serializers
-from game_engine.models import Profile, GameRound, GameSession, GameRoundProfileData
+from game_engine.models import Profile, GameRound, GameSession, GameRoundProfileData, CardSubmission
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-
     user = serializers.StringRelatedField(read_only=True)
     avatar = serializers.ImageField(read_only=True)
 
@@ -21,6 +20,7 @@ class GameRoundSerializer(serializers.ModelSerializer):
         model = GameRound
         fields = '__all__'
 
+
 class GameSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = GameSession
@@ -30,8 +30,16 @@ class GameSessionSerializer(serializers.ModelSerializer):
 class GameRoundProfileDataSerializer(serializers.ModelSerializer):
     round = serializers.StringRelatedField(read_only=True)
     user_profile = serializers.StringRelatedField(read_only=True)
-    cards = serializers.StringRelatedField(read_only=True)
+    cards = serializers.StringRelatedField(read_only=True, many=True)
 
     class Meta:
         model = GameRoundProfileData
         fields = "__all__"
+
+
+class CardSubmissionSerializer(serializers.ModelSerializer):
+    submitted_white_cards = serializers.StringRelatedField(read_only=True, many=True)
+
+    class Meta:
+        model = CardSubmission
+        fields = ('submitted_white_cards', 'submission_id')

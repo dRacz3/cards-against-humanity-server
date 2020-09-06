@@ -109,7 +109,7 @@ class GameManager:
     def retrieve_submission_for_round_data(self, profile_data_for_submitting_player):
         submission = CardSubmission.objects.filter(
             connected_game_round_profile=profile_data_for_submitting_player)
-        if not submission.exists():
+        if not submission.exists() or submission.first().submitted_white_cards.count() == 0:
             submission: CardSubmission = CardSubmission.objects.create(
                 connected_game_round_profile=profile_data_for_submitting_player)
         else:

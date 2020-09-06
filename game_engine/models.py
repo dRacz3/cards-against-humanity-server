@@ -21,7 +21,7 @@ class GameSession(models.Model):
     has_started = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Session: {self.session_id}"
+        return f"<Session: {self.session_id}"
 
 
 class SessionPlayerList(models.Model):
@@ -62,8 +62,9 @@ class GameRoundProfileData(models.Model):
         return f"[{self.round.session.session_id}] [{self.round.roundNumber}] {self.user_profile.user.username} : {self.current_points}"
 
 class CardSubmission(models.Model):
+    submission_id = models.AutoField(primary_key=True)
     submitted_white_cards = models.ManyToManyField(WhiteCard, related_name= "submitted_card_set")
     connected_game_round_profile = models.OneToOneField(GameRoundProfileData, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"Submission of {self.connected_game_round_profile.user_profile} : {self.submitted_white_cards.all()}"
+        return f"<{self.submission_id}> Submission of {self.connected_game_round_profile.user_profile} : {self.submitted_white_cards.all()}"
