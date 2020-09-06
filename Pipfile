@@ -19,6 +19,9 @@ tabulate = "*"
 django-allauth = "*"
 django-rest-auth = "*"
 pillow = "*"
+pyyaml = "*"
+uritemplate = "*"
+django-rest-swagger = "*"
 
 [requires]
 python_version = "3.6"
