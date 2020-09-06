@@ -45,9 +45,17 @@ class GameRoundFactory:
 
     def create_player_data_from_previous_round(self, deck, expected_count, previous_player_data):
         new_player_data = previous_player_data
+        cards_in_hand = new_player_data.cards.all()
         new_player_data.pk = None
-        cards_in_hand_count = previous_player_data.cards.count()
-        user_cards = get_white_cards_from_deck(deck, expected_count - cards_in_hand_count)
+        new_player_data.save()
+        print(f"Remaining cards in deck: {deck.white_cards.count()}, while user has {cards_in_hand.count()} cards "
+                         f", adding {expected_count - cards_in_hand.count()} new cards to {new_player_data.user_profile.user}")
+
+        user_cards = get_white_cards_from_deck(deck, expected_count - cards_in_hand.count())
+        # Add previous cards:
+        for card in cards_in_hand:
+            new_player_data.cards.add(card)
+        # Then the newly drawn cards.
         for card in user_cards:
             new_player_data.cards.add(card)
         new_player_data.save()
@@ -57,6 +65,7 @@ class GameRoundFactory:
         new_data = GameRoundProfileData.objects.create(user_profile=player,
                                                        current_points=0,
                                                        round=newRound)
+        new_data.save()
         for card in user_cards:
             new_data.cards.add(card)
         new_data.save()

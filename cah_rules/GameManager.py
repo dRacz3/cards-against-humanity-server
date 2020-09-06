@@ -133,9 +133,12 @@ class GameManager:
                         self.logger.info(
                             f"Player {profile_data_for_submitting_player.user_profile} has the card : {card}, submission accepted")
                         submission.submitted_white_cards.add(card)
+                        profile_data_for_submitting_player.cards.remove(card)
+
                     else:
                         raise Exception("Trying to add card to user that is not in their hand! Abort!")
                     submission.save()
+                    profile_data_for_submitting_player.save()
             else:
                 raise ValueError("Not enough cards submitted!")
         else:
