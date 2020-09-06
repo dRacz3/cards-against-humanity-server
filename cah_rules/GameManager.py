@@ -1,29 +1,10 @@
-import random
-
-from django.db.models import QuerySet, Max
+from django.db.models import QuerySet
 import logging
 
-from rest_framework.generics import get_object_or_404
-
-from cardstore.models import BlackCard, WhiteCard
+from cah_rules.game_round_factory import GameRoundFactory
+from cardstore.deck_operations import DeckFactory
 from game_engine.models import User, Profile, GameSession, SessionDeck, SessionPlayerList, GameRound, \
     GameRoundProfileData
-
-
-class DeckFactory:
-    def __init__(self):
-        pass
-
-    def get_white_cards(self, count: int):
-        # TODO: select based on categories..
-        items = WhiteCard.objects.all()
-        random_cards = random.sample(list(items), count)
-        return random_cards
-
-    def get_black_cards(self, count: int):
-        items = BlackCard.objects.all()
-        random_cards = random.sample(list(items), count)
-        return random_cards
 
 
 class GameManager:
@@ -71,69 +52,34 @@ class GameManager:
             self.logger.info("User is not authenticated")
             return False
 
+    def select_winner(self, user_name: str, session: GameSession):
+        last_round = GameRound.objects.filter(session=session).last()
+        winner_profile_data = GameRoundProfileData.objects.filter(round=last_round,
+                                                                  user_profile__user__username=user_name).first()
+        last_round.winner = winner_profile_data
+        last_round.save()
+
     def progressGame(self, session_id):
         session = GameSession.objects.filter(session_id=session_id).first()
         rf = GameRoundFactory(session)
         rounds = GameRound.objects.filter(session__session_id=session_id)
         if not rounds.exists():
-            self.logger.info("Game has not been started yet!")
+            self.logger.info("Game has not been started yet! Starting it...")
             session.has_started = True
-        newRound = rf.createNewRound()
-        newRound.save()
+            rf.createNewRound()
+        else:
+            if rounds.last().winner is not None:
+                self.increase_points_for_winner(rounds.last())
+                rf.createNewRound()
+            else:
+                self.logger.info("A winner must be selected!")
         session.save()
 
-
-class GameRoundFactory():
-    def __init__(self, session):
-        self.session = session
-        print(f"Loaded {session} ")
-        self.players = SessionPlayerList.objects.filter(session=self.session).first()
-        print(f"Players: {self.players}")
-
-    def createNewRound(self):
-        rounds = GameRound.objects.filter(session=self.session).order_by('roundNumber')
-        deck = SessionDeck.objects.filter(session=self.session).first()
-
-        if not rounds.exists():
-            roundNumber = 1
-            tzar = random.sample(list(self.players.profiles.all()), 1)[0]
-        else:
-            tzar = random.sample(list(self.players.profiles.exclude(user=rounds.last().tzar.user)), 1)[0]
-            roundNumber = rounds.last().roundNumber + 1
-            deck.black_cards.remove(rounds.last().active_black_card)
-            deck.save()
-
-        black_card = random.sample(list(deck.black_cards.all()), 1)[0]
-
-        newRound = GameRound.objects.create(
-            session=self.session,
-            roundNumber=roundNumber,
-            tzar=tzar,
-            active_black_card=black_card)
-        active_players = self.players.profiles.exclude(user=tzar.user)
-
-        # Fill deck for players
-        for player in self.players.profiles.all():
-            expected_count = 10
-            #TODO: filter based on round + user -> get previous data, copy from there
-            previous_player_data = GameRoundProfileData.objects.filter(round = newRound)
-
-            if previous_player_data.exists():
-                print(f"The player owned {previous_player_data.first().cards.count()} cards.")
-            else:
-                available = list(deck.white_cards.all())
-                user_cards = random.sample(available, 10)
-                [deck.white_cards.remove(card) for card in user_cards]
-                deck.save()
-                print(f"{player} receives : {user_cards}")
-                print(f"remaining cards: {deck.white_cards.all()}")
-                new_data = GameRoundProfileData.objects.create(user_profile=player,
-                                                               current_points=0, round=newRound)
-                for card in user_cards:
-                    new_data.cards.add(card)
-                new_data.save()
-
-        return newRound
+    def increase_points_for_winner(self, last_round):
+        winner_profile_data = GameRoundProfileData.objects.filter(round=last_round,
+                                                                  user_profile=last_round.winner).first()
+        winner_profile_data.current_points += 1
+        winner_profile_data.save()
 
 
 logger = logging.getLogger("GameManager")

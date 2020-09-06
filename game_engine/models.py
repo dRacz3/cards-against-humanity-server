@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 
 from cardstore.models import WhiteCard, BlackCard
 
+
 class Profile(models.Model):
     user: User = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.CharField(max_length=240, blank=True)
@@ -30,15 +31,18 @@ class SessionPlayerList(models.Model):
     def __str__(self):
         return f"[{self.session.session_id}] {self.profiles.all()}"
 
+
 class GameRound(models.Model):
     roundNumber: int = models.PositiveIntegerField(validators=[MinValueValidator(1),
                                                                MaxValueValidator(5)])
-    tzar = models.ForeignKey(Profile, on_delete=models.DO_NOTHING)
+    tzar = models.ForeignKey(Profile, on_delete=models.DO_NOTHING, related_name="Card_Tzar")
     active_black_card = models.ForeignKey(BlackCard, on_delete=models.DO_NOTHING)
     session = models.ForeignKey(GameSession, on_delete=models.CASCADE, related_name="Round")
+    winner = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True, related_name="Winner")
 
     def __str__(self):
-        return f"Round {self.roundNumber}, Tzar: {self.tzar}"
+        return f"[{self.session.session_id}] Round {self.roundNumber}, Tzar: {self.tzar}"
+
 
 class SessionDeck(models.Model):
     white_cards = models.ManyToManyField(WhiteCard)
@@ -48,6 +52,7 @@ class SessionDeck(models.Model):
     def __str__(self):
         return f"Deck for session: {self.session.session_id}"
 
+
 class GameRoundProfileData(models.Model):
     user_profile: Profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     cards = models.ManyToManyField(WhiteCard)
@@ -55,4 +60,4 @@ class GameRoundProfileData(models.Model):
     round: GameRound = models.ForeignKey(GameRound, on_delete=models.CASCADE, related_name="GameRoundProfileData")
 
     def __str__(self):
-        return f"[{self.round.roundNumber}]{self.user_profile.user.username} : {self.current_points}"
+        return f"[{self.round.session.session_id}] [{self.round.roundNumber}] {self.user_profile.user.username} : {self.current_points}"
