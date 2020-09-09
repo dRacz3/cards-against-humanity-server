@@ -22,6 +22,7 @@ pillow = "*"
 pyyaml = "*"
 uritemplate = "*"
 django-rest-swagger = "*"
+drf-yasg = {extras = ["validation"], version = "*"}
 
 [requires]
 python_version = "3.6"
