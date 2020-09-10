@@ -2,6 +2,8 @@ import json
 import logging
 from asgiref.sync import sync_to_async, async_to_sync
 from channels.generic.websocket import AsyncWebsocketConsumer
+from rest_framework.authtoken.models import Token
+from channels.auth import login
 
 from cah_rules.GameSession import CAH_GameSession, CAH_GAME_SESSIONS, GameEvents
 from common.IEventDispatcher import IEventDispatcher
@@ -21,6 +23,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
         SELECT_WINNER = '__selectwinner__'
 
     async def connect(self):
+        def get_user_by_token(token_key):
+            try:
+                token= Token.objects.get(key=token_key[1])
+                return token.user
+            except Exception as e:
+                return
+        user = await sync_to_async(get_user_by_token)(self.scope['query_string'].decode().split('='))
+        try:
+            await sync_to_async(login)(self.scope, user )
+        except Exception as e:
+            self.logger.warning("Failed to authenticate user")
+
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.user_name = self.scope['url_route']['kwargs']['user_name']
         self.logger = logging.getLogger(self.room_name)

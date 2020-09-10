@@ -42,24 +42,18 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
-
     'rest_framework',
     'rest_framework.authtoken',
-
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-
     'rest_auth',
     'rest_auth.registration',
-
     'cardstore',
     'channels',
     'game_engine',
     'rest_framework_swagger',
     'drf_yasg'
-
-
 ]
 
 MIDDLEWARE = [
