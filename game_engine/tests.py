@@ -72,8 +72,8 @@ class GameManagerTestCase(APITestCase):
         # the user Laci should be in the session players as well now.
         self.assertTrue(session_players.profiles.filter(user=laci).exists())
 
-        # Round should not be created unless the game progresses
-        self.assertFalse(GameRound.objects.filter(session__session_id=session_name).exists())
+        # First round is created immediately.
+        self.assertTrue(GameRound.objects.filter(session__session_id=session_name).exists())
         gm.progress_game(session_name)
 
     def test_multiple_player_session_does_not_progress_until_winner_selected(self):
@@ -99,9 +99,12 @@ class GameManagerTestCase(APITestCase):
                                                     session_name=session_name)
         gm.progress_game(session_name)
         last_round = fetch_last_round_for_session_id(session_name)
+        print(last_round)
         for user in user_instances:
             user_profile_for_round = GameRoundProfileData.objects.filter(user_profile__user=user,
                                                                          round=last_round).first()
+            print(user_profile_for_round)
+            self.assertIsNotNone(user_profile_for_round)
             # Select a card from the player's hand
             cards_for_user = user_profile_for_round.cards.all()
             submitted_card_text = cards_for_user[0].text

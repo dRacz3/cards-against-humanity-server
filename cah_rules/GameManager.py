@@ -1,3 +1,4 @@
+import random
 from typing import List, Union
 
 from django.db.models import QuerySet
@@ -79,27 +80,28 @@ class GameManager:
             [new_deck.white_cards.add(card) for card in DeckFactory().get_white_cards(50)]
             [new_deck.black_cards.add(card) for card in DeckFactory().get_black_cards(50)]
             new_deck.save()
+
+            self.logger.info(f"Creating SessionPlayerList object for session:{session_id}..")
+            session_player_list = SessionPlayerList.objects.create(session=new_session)
+            session_player_list.save()
+            self.logger.info("Creating the first round prototype")
+            GameRoundFactory(new_session).createNewRound()
             return new_session
         else:
-            return session[0:1][0]
+            return session.first()
 
     def add_user_to_session(self, session_id: str, user: User) -> bool:
         if user.is_authenticated:
             self.logger.info(f"{user} joining {session_id}")
             session = self.create_or_retrieve_session(session_id)
-            playerList: QuerySet = SessionPlayerList.objects.filter(session=session)
-            if not playerList.exists():
-                self.logger.info(f"Player list does not exist for session :{session_id}. Creating it.")
-                session_player_list = SessionPlayerList.objects.create(session=session)
-            else:
-                session_player_list = playerList[0]
+            session_player_list: SessionPlayerList = SessionPlayerList.objects.get(session=session)
 
             if not session_player_list.profiles.filter(user=user).exists():
-                self.logger.info("Userprofile is not in session player list, adding it.")
+                self.logger.info(f"{user} is not in session player list, adding it.")
                 session_player_list.profiles.add(retrieve_user_profile(user))
                 session_player_list.save()
             else:
-                self.logger.info("Userprofile is ALREADY in session player list. Will not add it twice.")
+                self.logger.info(f"{user} is ALREADY in session player list. Will not add it twice.")
             return True
         else:
             self.logger.info("User is not authenticated")
@@ -148,10 +150,16 @@ class GameManager:
         session: GameSession = GameSession.objects.get(session_id=session_id)
         rf = GameRoundFactory(session)
         rounds: QuerySet = GameRound.objects.filter(session__session_id=session_id)
-        if not rounds.exists():
+
+        if not session.has_started:
             self.logger.info("Game has not been started yet! Starting it...")
+            complete_player_list = SessionPlayerList.objects.filter(session=session).first()
+            last_round = rounds.last()
+            last_round.tzar = random.sample(list(complete_player_list.profiles.all()), 1)[0]
+            last_round.save()
+            # before the first actually starts, the player data has to be created.
+            rf.create_player_data(last_round, last_round)
             session.has_started = True
-            rf.createNewRound()
         else:
             if rounds.last().winner is not None:
                 self.increase_points_for_winner(rounds.last())

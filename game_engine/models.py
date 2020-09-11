@@ -35,7 +35,7 @@ class SessionPlayerList(models.Model):
 class GameRound(models.Model):
     roundNumber: int = models.PositiveIntegerField(validators=[MinValueValidator(1),
                                                                MaxValueValidator(5)])
-    tzar = models.ForeignKey(Profile, on_delete=models.DO_NOTHING, related_name="Card_Tzar")
+    tzar = models.ForeignKey(Profile, on_delete=models.DO_NOTHING, related_name="Card_Tzar", blank=True, null=True)
     active_black_card = models.ForeignKey(BlackCard, on_delete=models.DO_NOTHING)
     session = models.ForeignKey(GameSession, on_delete=models.CASCADE, related_name="Round")
     winner = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True, related_name="Winner")

@@ -23,6 +23,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         SELECT_WINNER = '__selectwinner__'
 
     async def connect(self):
+        self.room_name = self.scope['url_route']['kwargs']['room_name']
+        self.user_name = self.scope['url_route']['kwargs']['user_name']
+        self.logger = logging.getLogger(self.room_name)
+
         def get_user_by_token(token_key):
             try:
                 token= Token.objects.get(key=token_key[1])
@@ -34,10 +38,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await sync_to_async(login)(self.scope, user )
         except Exception as e:
             self.logger.warning("Failed to authenticate user")
-
-        self.room_name = self.scope['url_route']['kwargs']['room_name']
-        self.user_name = self.scope['url_route']['kwargs']['user_name']
-        self.logger = logging.getLogger(self.room_name)
 
         user_add_success = await sync_to_async(CAHGameManager.add_user_to_session)(self.room_name, self.scope["user"])
 

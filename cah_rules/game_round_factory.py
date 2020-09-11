@@ -15,7 +15,7 @@ class GameRoundFactory:
         last_round = rounds.last()
         if not rounds.exists():
             roundNumber = 1
-            tzar = random.sample(list(self.players.profiles.all()), 1)[0]
+            tzar = None
         else:
             tzar = random.sample(list(self.players.profiles.exclude(user=last_round.tzar.user)), 1)[0]
             roundNumber = last_round.roundNumber + 1
@@ -32,6 +32,11 @@ class GameRoundFactory:
 
         newRound.save()
 
+        self.create_player_data(last_round, newRound)
+        return newRound
+
+    def create_player_data(self, last_round, newRound):
+        deck = SessionDeck.objects.filter(session=self.session).first()
         for player in self.players.profiles.all():
             expected_count = 10
             previous_player_data: GameRoundProfileData = GameRoundProfileData.objects.filter(round=last_round,
@@ -40,8 +45,6 @@ class GameRoundFactory:
                 self.create_player_data_from_previous_round(deck, expected_count, previous_player_data)
             else:
                 self.create_new_player_data(deck, expected_count, newRound, player)
-
-        return newRound
 
     def create_player_data_from_previous_round(self, deck, expected_count, previous_player_data):
         new_player_data = previous_player_data
