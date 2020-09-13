@@ -33,6 +33,7 @@ class GameRoundFactory:
         newRound.save()
 
         self.create_player_data(last_round, newRound)
+
         return newRound
 
     def create_player_data(self, last_round, newRound):

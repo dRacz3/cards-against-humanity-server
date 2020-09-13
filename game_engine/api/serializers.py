@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from cardstore.api.serializers import BlackCardSerializer, WhiteCardSerializer
-from game_engine.models import Profile, GameRound, GameSession, GameRoundProfileData, CardSubmission
+from game_engine.models import Profile, GameRound, GameSession, GameRoundProfileData, CardSubmission, SessionPlayerList
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -48,3 +48,12 @@ class GameRoundSerializer(serializers.ModelSerializer):
         model = GameRound
         fields = '__all__'
         depth  = 5
+
+
+class SessionPlayerListSerializer(serializers.ModelSerializer):
+    profiles = ProfileSerializer(read_only=True, many=True)
+    session = GameSessionSerializer(read_only=True)
+
+    class Meta:
+        model = SessionPlayerList
+        fields = '__all__'

@@ -24,7 +24,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
-        self.user_name = self.scope['url_route']['kwargs']['user_name']
         self.logger = logging.getLogger(self.room_name)
 
         def get_user_by_token(token_key):
@@ -36,6 +35,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         user = await sync_to_async(get_user_by_token)(self.scope['query_string'].decode().split('='))
         try:
             await sync_to_async(login)(self.scope, user )
+            self.user = user
         except Exception as e:
             self.logger.warning("Failed to authenticate user")
 
@@ -52,7 +52,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
         if user_add_success:
-            message = f"Added new player: {self.user_name}"
+            message = f"Player connected to room: {self.user}"
         else:
             message = "Failed to add user to session... Not authenticated"
         await self.channel_layer.group_send(
@@ -65,13 +65,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def disconnect(self, close_code):
-        self.logger.warning(f"{self.user_name} has disconnected... removing from game")
+        self.logger.warning(f"{self.user} has disconnected... removing from game")
 
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'chat_message',
-                'message': f"{self.user_name} has left the game..."
+                'message': f"{self.user} has left the game..."
             }
         )
 
@@ -115,8 +115,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             message = text_data_json['message']
             print(f"Processing: {message}")
-            if ('lofasz' in message):
+            if ('step' in message):
                 await sync_to_async(CAHGameManager.progress_game)(self.room_name)
+                await self.broadcast_to_group(f"UPDATE")
             elif (self.AcceptedCommands.SUBMIT in message):
                 self.logger.info(f"Submission: {message}")
                 submitted_card_pks = message.split('|')[1:]

@@ -120,31 +120,28 @@ class GameManager:
 
     def submit_cards(self, session_id: str, submitting_player: User, submitted_card_texts: List[str]):
         last_round: GameRound = fetch_last_round_for_session_id(session_id)
-        if last_round is not None:
-            if last_round.active_black_card.pick == len(submitted_card_texts):
-                profile_data_for_submitting_player: GameRoundProfileData = GameRoundProfileData.objects.filter(
-                    round=last_round,
-                    user_profile__user=submitting_player).first()
-                submission = retrieve_submission_for_round_data(profile_data_for_submitting_player)
-                submitted_cards = reverse_search_cards_by_text(submitted_card_texts)
+        if last_round.active_black_card.pick == len(submitted_card_texts):
+            profile_data_for_submitting_player: GameRoundProfileData = GameRoundProfileData.objects.filter(
+                round=last_round,
+                user_profile__user=submitting_player).first()
+            submission = retrieve_submission_for_round_data(profile_data_for_submitting_player)
+            submitted_cards = reverse_search_cards_by_text(submitted_card_texts)
 
-                # Check each card
-                for card in submitted_cards:
-                    # It must be in the player's hand
-                    if card in profile_data_for_submitting_player.cards.all():
-                        self.logger.info(
-                            f"Player {profile_data_for_submitting_player.user_profile} has the card : {card}, submission accepted")
-                        submission.submitted_white_cards.add(card)
-                        profile_data_for_submitting_player.cards.remove(card)
+            # Check each card
+            for card in submitted_cards:
+                # It must be in the player's hand
+                if card in profile_data_for_submitting_player.cards.all():
+                    self.logger.info(
+                        f"Player {profile_data_for_submitting_player.user_profile} has the card : {card}, submission accepted")
+                    submission.submitted_white_cards.add(card)
+                    profile_data_for_submitting_player.cards.remove(card)
 
-                    else:
-                        raise Exception("Trying to add card to user that is not in their hand! Abort!")
-                    submission.save()
-                    profile_data_for_submitting_player.save()
-            else:
-                raise ValueError("Not enough cards submitted!")
+                else:
+                    raise Exception("Trying to add card to user that is not in their hand! Abort!")
+                submission.save()
+                profile_data_for_submitting_player.save()
         else:
-            raise ValueError("Game has not started yet")
+            raise ValueError("Not enough cards submitted!")
 
     def progress_game(self, session_id) -> None:
         session: GameSession = GameSession.objects.get(session_id=session_id)

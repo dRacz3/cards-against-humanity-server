@@ -8,8 +8,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 
+from cardstore.api.serializers import WhiteCardSerializer
 from game_engine.api.serializers import GameSessionSerializer, ProfileSerializer, GameRoundProfileDataSerializer, \
-    GameRoundSerializer, CardSubmissionSerializer
+    GameRoundSerializer, CardSubmissionSerializer, SessionPlayerListSerializer
 from game_engine.models import Profile, GameSession, GameRoundProfileData, GameRound, CardSubmission
 
 
@@ -96,40 +97,45 @@ class SessionStateView(APIView):
 
         data = {
             'has_started': 'no',
-            'last_round:': []
+            'last_round': [],
+            'players': [],
+            'submissions': []
         }
 
         if session:
             if session.has_started:
-                data['has_started'] = 'yes'
+                data['has_started'] = 'true'
             rounds = GameRound.objects.filter(session=session).last()
             srl = GameRoundSerializer(rounds)
             data['last_round'] = srl.data
+            players = session.sessionplayerlist_set.first()
+            playerSerializer = SessionPlayerListSerializer(players)
+
+            data['players'] = playerSerializer.data
+
         return Response(data, status=status.HTTP_200_OK)
 
 
-class GameSessionOperations(APIView):
+class CheckCardsInUserHand(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_object(self, session_id):
-        session = get_object_or_404(GameSession, pk=session_id)
-        return session
-
     def get(self, request, session_id):
-        session = self.get_object(session_id)
-        serializer = GameSessionSerializer(session)
-        return Response(serializer.data)
+        user = request.user
+        profile: GameRoundProfileData = GameRoundProfileData.objects.get(user_profile__user=user,
+                                                                         round__session__session_id=session_id)
+        if profile:
+            card_serializer = WhiteCardSerializer(profile.cards.all(), many=True)
+            return Response(card_serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response("", status=status.HTTP_404_NOT_FOUND)
 
-    def put(self, request, session_id):
-        session: GameSession = self.get_object(session_id)
-        if not session.has_started:
-            user = request.user
-            userProfile = Profile.objects.filter(user=user)[0]
-            session.playerlist.profiles.add(userProfile)
 
-        return Response(f"Added {userProfile} to {session}", status=status.HTTP_200_OK)
-
-    def delete(self, request, session_id):
-        article = self.get_object(session_id)
-        article.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+class SubmitCard(generics.UpdateAPIView):
+    def post(self, request, session_id):
+        serializer = WhiteCardSerializer(data=request.data)
+        session = GameSession.objects.get(session_id = session_id)
+        user = request.user
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
