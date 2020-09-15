@@ -123,6 +123,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 submitted_card_pks = message.split('|')[1:]
                 print(f"Submitted card pks: {submitted_card_pks}")
                 await sync_to_async(CAHGameManager.submit_cards)(self.room_name, self.scope["user"], submitted_card_pks)
+                await self.broadcast_to_group(f"UPDATE")
             elif (self.AcceptedCommands.SELECT_WINNER in message):
                 start_index = message.find(self.AcceptedCommands.SELECT_WINNER) + len(
                     self.AcceptedCommands.SELECT_WINNER) + 1

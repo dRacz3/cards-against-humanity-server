@@ -77,7 +77,7 @@ class GameRoundsBasedOnSessionsViewSet(generics.ListAPIView):
             return []
 
 
-class CardSubmissionsRoundsViewSet(generics.ListAPIView):
+class CardSubmissionsRoundsViewSet(generics.ListCreateAPIView):
     serializer_class = CardSubmissionSerializer
     permission_classes = [IsAuthenticated]
 
@@ -90,13 +90,19 @@ class CardSubmissionsRoundsViewSet(generics.ListAPIView):
         else:
             return []
 
+    def perform_create(self, serializer):
+        session_id = self.kwargs["session_id"]
+        if session_id is not None:
+            round = GameRound.objects.filter(session__session_id=session_id).last()
+            if round is not None:
+                connected_submission : CardSubmission= CardSubmission.objects.filter(connected_game_round_profile__round=round)
 
 class SessionStateView(APIView):
     def get(self, request, session_id):
         session: Union[GameSession, None] = GameSession.objects.filter(session_id=session_id).first()
 
         data = {
-            'has_started': 'no',
+            'has_started': False,
             'last_round': [],
             'players': [],
             'submissions': []
@@ -104,7 +110,7 @@ class SessionStateView(APIView):
 
         if session:
             if session.has_started:
-                data['has_started'] = 'true'
+                data['has_started'] = True
             rounds = GameRound.objects.filter(session=session).last()
             srl = GameRoundSerializer(rounds)
             data['last_round'] = srl.data
@@ -129,13 +135,3 @@ class CheckCardsInUserHand(APIView):
         else:
             return Response("", status=status.HTTP_404_NOT_FOUND)
 
-
-class SubmitCard(generics.UpdateAPIView):
-    def post(self, request, session_id):
-        serializer = WhiteCardSerializer(data=request.data)
-        session = GameSession.objects.get(session_id = session_id)
-        user = request.user
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -32,7 +32,7 @@ class GameRoundProfileDataSerializer(serializers.ModelSerializer):
 
 
 class CardSubmissionSerializer(serializers.ModelSerializer):
-    submitted_white_cards = serializers.StringRelatedField(read_only=True, many=True)
+    submitted_white_cards = WhiteCardSerializer(many=True)
 
     class Meta:
         model = CardSubmission
