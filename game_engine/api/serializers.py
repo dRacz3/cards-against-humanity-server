@@ -13,8 +13,6 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-
-
 class GameSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = GameSession
@@ -33,10 +31,11 @@ class GameRoundProfileDataSerializer(serializers.ModelSerializer):
 
 class CardSubmissionSerializer(serializers.ModelSerializer):
     submitted_white_cards = WhiteCardSerializer(many=True)
+    connected_game_round_profile = GameRoundProfileDataSerializer(read_only=True)
 
     class Meta:
         model = CardSubmission
-        fields = ('submitted_white_cards', 'submission_id')
+        fields = ('submitted_white_cards', 'submission_id', 'connected_game_round_profile')
 
 
 class GameRoundSerializer(serializers.ModelSerializer):

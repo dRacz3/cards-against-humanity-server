@@ -14,15 +14,15 @@ from game_engine.api.serializers import GameSessionSerializer, ProfileSerializer
 from game_engine.models import Profile, GameSession, GameRoundProfileData, GameRound, CardSubmission
 
 
-class ProfileViewSet(mixins.UpdateModelMixin,
-                     mixins.ListModelMixin,
-                     mixins.RetrieveModelMixin,
-                     viewsets.GenericViewSet):
-    queryset = Profile.objects.all()
-    serializer_class = ProfileSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [SearchFilter]
-    search_fields = ["room"]
+# class ProfileViewSet(mixins.UpdateModelMixin,
+#                      mixins.ListModelMixin,
+#                      mixins.RetrieveModelMixin,
+#                      viewsets.GenericViewSet):
+#     queryset = Profile.objects.all()
+#     serializer_class = ProfileSerializer
+#     permission_classes = [IsAuthenticated]
+#     filter_backends = [SearchFilter]
+#     search_fields = ["room"]
 
 
 class GameSessionViewSet(mixins.UpdateModelMixin,
@@ -90,12 +90,6 @@ class CardSubmissionsRoundsViewSet(generics.ListCreateAPIView):
         else:
             return []
 
-    def perform_create(self, serializer):
-        session_id = self.kwargs["session_id"]
-        if session_id is not None:
-            round = GameRound.objects.filter(session__session_id=session_id).last()
-            if round is not None:
-                connected_submission : CardSubmission= CardSubmission.objects.filter(connected_game_round_profile__round=round)
 
 class SessionStateView(APIView):
     def get(self, request, session_id):
@@ -122,16 +116,35 @@ class SessionStateView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class CheckCardsInUserHand(APIView):
+class FetchOwnPlayerInformations(APIView):
+    #TODO: rename endpoint to respect the new name
     permission_classes = [IsAuthenticated]
 
     def get(self, request, session_id):
         user = request.user
-        profile: GameRoundProfileData = GameRoundProfileData.objects.get(user_profile__user=user,
-                                                                         round__session__session_id=session_id)
+        profile: GameRoundProfileData = GameRoundProfileData.objects.filter(user_profile__user=user,
+                                                                         round__session__session_id=session_id).last()
+        response = {
+            'cards' : [],
+            'isTzar' : False
+        }
         if profile:
             card_serializer = WhiteCardSerializer(profile.cards.all(), many=True)
-            return Response(card_serializer.data, status=status.HTTP_200_OK)
+            response['cards'] = card_serializer.data
+            response['isTzar'] = profile.round.tzar == profile.user_profile
+            return Response(response, status=status.HTTP_200_OK)
         else:
             return Response("", status=status.HTTP_404_NOT_FOUND)
 
+class HasUserSubmittedThisRound(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, session_id):
+        user = request.user
+        profile: GameRoundProfileData = GameRoundProfileData.objects.filter(user_profile__user=user,
+                                                                         round__session__session_id=session_id).last()
+
+        if profile and CardSubmission.objects.filter(connected_game_round_profile=profile).exists():
+            return Response(False ,status=status.HTTP_200_OK)
+        else:
+            return Response(True, status=status.HTTP_404_NOT_FOUND)
