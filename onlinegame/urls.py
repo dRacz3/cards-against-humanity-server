@@ -22,7 +22,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('cardstore.api.urls')),
+    path('card-api/', include('cardstore.api.urls')),
     path('game_engine_api/', include('game_engine.api.urls')),
     path('game_engine/', include('game_engine.urls')),
     path("api-auth/", include("rest_framework.urls")),
