@@ -9,7 +9,7 @@ from cah_rules.GameSession import CAH_GameSession, CAH_GAME_SESSIONS, GameEvents
 from common.IEventDispatcher import IEventDispatcher
 from game_engine.models import GameSession, Profile
 
-from cah_rules.GameManager import CAHGameManager
+from cah_rules.GameManager import CAHGameManager, UPDATE_COMMANDS
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -28,13 +28,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         def get_user_by_token(token_key):
             try:
-                token= Token.objects.get(key=token_key[1])
+                token = Token.objects.get(key=token_key[1])
                 return token.user
             except Exception as e:
                 return
+
         user = await sync_to_async(get_user_by_token)(self.scope['query_string'].decode().split('='))
         try:
-            await sync_to_async(login)(self.scope, user )
+            await sync_to_async(login)(self.scope, user)
             self.user = user
         except Exception as e:
             self.logger.warning("Failed to authenticate user")
@@ -42,7 +43,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         user_add_success = await sync_to_async(CAHGameManager.add_user_to_session)(self.room_name, self.scope["user"])
 
         self.room_group_name = 'chat_%s' % self.room_name
-        self.eventDispatcher = CAHGameEventDispatcher(self.channel_layer, self.room_name)
 
         # Join room group
         await self.channel_layer.group_add(
@@ -63,10 +63,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': message
             }
         )
+        await self.broadcast_to_group(f"{UPDATE_COMMANDS.UPDATE}")
 
     async def disconnect(self, close_code):
         self.logger.warning(f"{self.user} has disconnected... removing from game")
-
+        await sync_to_async(CAHGameManager.remove_user_from_session)(self.room_name, self.scope['user'])
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -74,6 +75,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': f"{self.user} has left the game..."
             }
         )
+
+        await self.broadcast_to_group(f"{UPDATE_COMMANDS.UPDATE}")
 
         # Leave room group
         await self.channel_layer.group_discard(
@@ -86,6 +89,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         print(f"Broadcasting message: {message}")
         await self.channel_layer.group_send(
             self.room_group_name,
+            {
+                'type': type,
+                'message': message
+            }
+        )
+
+    async def send_to_single_user(self, message: str, type='chat_message'):
+        print(f"Broadcasting message: {message} to channel: {self.channel_name}")
+        await self.channel_layer.send(
+            self.channel_name,
             {
                 'type': type,
                 'message': message
@@ -116,14 +129,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
             message = text_data_json['message']
             print(f"Processing: {message}")
             if ('step' in message):
-                await sync_to_async(CAHGameManager.progress_game)(self.room_name)
-                await self.broadcast_to_group(f"UPDATE")
+                result = await sync_to_async(CAHGameManager.progress_game)(self.room_name)
+                await self.broadcast_to_group(f"{result}")
             elif (self.AcceptedCommands.SUBMIT in message):
                 self.logger.info(f"Submission: {message}")
                 submitted_card_pks = message.split('|')[1:]
                 print(f"Submitted card pks: {submitted_card_pks}")
-                await sync_to_async(CAHGameManager.submit_cards)(self.room_name, self.scope["user"], submitted_card_pks)
-                await self.broadcast_to_group(f"UPDATE")
+                result = await sync_to_async(CAHGameManager.submit_cards)(self.room_name, self.scope["user"],
+                                                                          submitted_card_pks)
+                await self.broadcast_to_group(f"{result}")
             elif (self.AcceptedCommands.SELECT_WINNER in message):
                 start_index = message.find(self.AcceptedCommands.SELECT_WINNER) + len(
                     self.AcceptedCommands.SELECT_WINNER) + 1
@@ -134,17 +148,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await self.broadcast_to_group(message)
         except Exception as e:
             self.logger.info(f"Error! {e}")
-            await self.broadcast_to_group(f"Error! + {e}")
-
-    async def list_players(self):
-        player_data = CAH_GAME_SESSIONS[self.room_name].session_player_data
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': f"{player_data}"
-            }
-        )
+            await self.send_to_single_user(f"Error! + {e}")
 
     # Receive message from room group
     async def chat_message(self, event):
@@ -164,35 +168,3 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'event_name': event_name,
             'message': message
         }))
-
-
-class CAHGameEventDispatcher:
-    def __init__(self, channel_layer, room_name: str):
-        self.asyncGameEventDispatcher = AsyncGameEventDispatcher(channel_layer, room_name)
-        self.events = GameEvents
-
-    def broadcast_status(self, status):
-        self.asyncGameEventDispatcher.emit(status, event_name=self.events.STATUS_BROADCAST.name)
-
-
-class AsyncGameEventDispatcher(IEventDispatcher):
-    def __init__(self, channel_layer: str, room_name: str):
-        super().__init__()
-        self.channel_layer = channel_layer
-        self.room_group_name = room_name
-        self.logger = None
-
-    def setLogger(self, logger):
-        self.logger = logger
-
-    def emit(self, message, event_name):
-        if self.logger is not None:
-            self.logger.info(f"[{event_name}][{message}]")
-        async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name,
-            {
-                'type': 'game_event',
-                'event_name': event_name,
-                'message': message
-            }
-        )

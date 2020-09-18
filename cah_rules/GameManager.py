@@ -11,6 +11,10 @@ from game_engine.models import User, Profile, GameSession, SessionDeck, SessionP
     GameRoundProfileData, CardSubmission
 
 
+class UPDATE_COMMANDS:
+    UPDATE = "UPDATE"
+    REQUEST_PLAYER_DATA = "REQUEST_PLAYER_DATA"
+
 def reverse_search_cards_by_text(submitted_card_texts: List[str]) -> List[WhiteCard]:
     """
     Calling this function will perform reverse card text lookup for white cards.
@@ -107,6 +111,13 @@ class GameManager:
             self.logger.info("User is not authenticated")
             return False
 
+    def remove_user_from_session(self, session_id: str, user: User):
+        session = self.create_or_retrieve_session(session_id)
+        session_player_list: SessionPlayerList = SessionPlayerList.objects.get(session=session)
+        session_player_list.profiles.remove(retrieve_user_profile(user))
+        session_player_list.save()
+
+
     def select_winner(self, submission_id: str, session_id: str):
         wsc = WinnerSelectionChecker()
         if wsc.winner_can_be_selected():
@@ -140,6 +151,7 @@ class GameManager:
                     raise Exception("Trying to add card to user that is not in their hand! Abort!")
                 submission.save()
                 profile_data_for_submitting_player.save()
+            return UPDATE_COMMANDS.UPDATE
         else:
             raise ValueError("Not enough cards submitted!")
 
@@ -164,6 +176,7 @@ class GameManager:
             else:
                 self.logger.info("A winner must be selected!")
         session.save()
+        return UPDATE_COMMANDS.UPDATE
 
     def increase_points_for_winner(self, last_round) -> None:
         winner_profile_data = GameRoundProfileData.objects.filter(round=last_round,
