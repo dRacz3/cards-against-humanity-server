@@ -17,7 +17,11 @@ class GameRoundFactory:
             roundNumber = 1
             tzar = None
         else:
-            tzar = random.sample(list(self.players.profiles.exclude(user=last_round.tzar.user)), 1)[0]
+            if(len(self.players.profiles.all()) > 1):
+                tzar = random.sample(list(self.players.profiles.exclude(user=last_round.tzar.user)), 1)[0]
+            else:
+                print("! Only one player mode")
+                tzar = self.players.profiles.first()
             roundNumber = last_round.roundNumber + 1
             deck.black_cards.remove(last_round.active_black_card)
             deck.save()
@@ -43,14 +47,15 @@ class GameRoundFactory:
             previous_player_data: GameRoundProfileData = GameRoundProfileData.objects.filter(round=last_round,
                                                                                              user_profile=player).first()
             if previous_player_data is not None:
-                self.create_player_data_from_previous_round(deck, expected_count, previous_player_data)
+                self.create_player_data_from_previous_round(deck, expected_count, previous_player_data, newRound)
             else:
                 self.create_new_player_data(deck, expected_count, newRound, player)
 
-    def create_player_data_from_previous_round(self, deck, expected_count, previous_player_data):
+    def create_player_data_from_previous_round(self, deck, expected_count, previous_player_data, new_round):
         new_player_data = previous_player_data
         cards_in_hand = new_player_data.cards.all()
         new_player_data.pk = None
+
         new_player_data.save()
         print(f"Remaining cards in deck: {deck.white_cards.count()}, while user has {cards_in_hand.count()} cards "
                          f", adding {expected_count - cards_in_hand.count()} new cards to {new_player_data.user_profile.user}")
@@ -62,6 +67,7 @@ class GameRoundFactory:
         # Then the newly drawn cards.
         for card in user_cards:
             new_player_data.cards.add(card)
+        new_player_data.round = new_round
         new_player_data.save()
 
     def create_new_player_data(self, deck, expected_count, newRound, player):
