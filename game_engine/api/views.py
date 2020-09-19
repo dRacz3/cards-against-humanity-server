@@ -86,9 +86,10 @@ class CardSubmissionsRoundsViewSet(generics.ListCreateAPIView):
         if session_id is not None:
             round = GameRound.objects.filter(session__session_id=session_id).last()
             if round is not None:
-                return CardSubmission.objects.filter(connected_game_round_profile__round=round)
-        else:
-            return []
+                result = CardSubmission.objects.filter(connected_game_round_profile__round=round)
+                if result is not None:
+                    return result
+        return []
 
 
 class SessionStateView(APIView):
@@ -144,7 +145,7 @@ class HasUserSubmittedThisRound(APIView):
         profile: GameRoundProfileData = GameRoundProfileData.objects.filter(user_profile__user=user,
                                                                          round__session__session_id=session_id).last()
 
-        if profile and CardSubmission.objects.filter(connected_game_round_profile=profile).exists():
-            return Response(False ,status=status.HTTP_200_OK)
-        else:
-            return Response(True, status=status.HTTP_404_NOT_FOUND)
+        if profile:
+            if CardSubmission.objects.filter(connected_game_round_profile=profile).exists():
+                return Response(True ,status=status.HTTP_200_OK)
+        return Response(False, status=status.HTTP_404_NOT_FOUND)
