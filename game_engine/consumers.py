@@ -143,7 +143,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     self.AcceptedCommands.SELECT_WINNER) + 1
                 winning_submission = message[start_index:]
                 self.logger.info(f"Selecting winner.. winner is submission with id: {winning_submission}")
-                await sync_to_async(CAHGameManager.select_winner)(winning_submission, self.room_name)
+                winner = await sync_to_async(CAHGameManager.select_winner)(winning_submission, self.room_name)
+                await self.broadcast_to_group(f"__DECLARE_WINNER__|{winner}")
             else:
                 await self.broadcast_to_group(message)
         except Exception as e:

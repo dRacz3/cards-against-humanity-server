@@ -118,7 +118,7 @@ class GameManager:
         session_player_list.save()
 
 
-    def select_winner(self, submission_id: str, session_id: str):
+    def select_winner(self, submission_id: str, session_id: str) -> str:
         wsc = WinnerSelectionChecker()
         if wsc.winner_can_be_selected():
             last_round = fetch_last_round_for_session_id(session_id)
@@ -126,6 +126,7 @@ class GameManager:
             self.logger.info(f"{submission.connected_game_round_profile.user_profile} has been selected as the winner!")
             last_round.winner = submission.connected_game_round_profile.user_profile
             last_round.save()
+            return str(last_round.winner.user)
         else:
             raise ValueError(wsc.get_error_reason())
 
