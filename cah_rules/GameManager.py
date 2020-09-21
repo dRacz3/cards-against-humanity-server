@@ -14,6 +14,10 @@ from game_engine.models import User, Profile, GameSession, SessionDeck, SessionP
 class UPDATE_COMMANDS:
     UPDATE = "UPDATE"
     REQUEST_PLAYER_DATA = "REQUEST_PLAYER_DATA"
+    GAME_HAS_ENDED = "GAME_HAS_ENDED"
+
+
+MAX_ROUND_NUMBER = 3
 
 def reverse_search_cards_by_text(submitted_card_texts: List[str]) -> List[WhiteCard]:
     """
@@ -173,7 +177,10 @@ class GameManager:
         else:
             if rounds.last().winner is not None:
                 self.increase_points_for_winner(rounds.last())
-                rf.createNewRound()
+                if rounds.last().roundNumber == MAX_ROUND_NUMBER:
+                    return UPDATE_COMMANDS.GAME_HAS_ENDED
+                else:
+                    rf.createNewRound()
             else:
                 self.logger.info("A winner must be selected!")
         session.save()
