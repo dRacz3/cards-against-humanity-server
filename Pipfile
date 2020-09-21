@@ -23,6 +23,9 @@ pyyaml = "*"
 uritemplate = "*"
 django-rest-swagger = "*"
 drf-yasg = {extras = ["validation"], version = "*"}
+gunicorn = "*"
+django-heroku = "*"
+psycopg2 = "*"
 
 [requires]
 python_version = "3.6"

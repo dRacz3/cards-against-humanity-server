@@ -2,8 +2,8 @@ from django.db import models
 
 
 class DeckMetaData(models.Model):
-    id_name = models.CharField(max_length=200, unique=True)
-    description = models.CharField(max_length=200)
+    id_name = models.CharField(max_length=500, unique=True)
+    description = models.CharField(max_length=500)
     official = models.BooleanField(default=False)
     name = models.CharField(max_length=200)
     icon = models.CharField(max_length=200)
@@ -13,8 +13,8 @@ class DeckMetaData(models.Model):
 
 
 class BlackCard(models.Model):
-    card_id = models.AutoField(primary_key=True)
-    text = models.CharField(max_length=200)
+    card_id = models.AutoField(primary_key=True, unique=True)
+    text = models.CharField(max_length=500)
     icon = models.CharField(max_length=200)
     deck = models.CharField(max_length=200)
     pick = models.IntegerField()
@@ -24,8 +24,8 @@ class BlackCard(models.Model):
 
 
 class WhiteCard(models.Model):
-    card_id = models.AutoField(primary_key=True)
-    text = models.CharField(max_length=200)
+    card_id = models.AutoField(primary_key=True, unique=True)
+    text = models.CharField(max_length=500)
     icon = models.CharField(max_length=200)
     deck = models.CharField(max_length=200)
 

@@ -7,14 +7,14 @@ with open('data.json', 'r') as file:
 
 from cardstore.models import DeckMetaData, WhiteCard, BlackCard
 for key in data['metadata'].keys():
-    print("Using {key}")
+    print(f"Using {key}")
     DeckMetaData.objects.create(id_name = key, **data['metadata'][key]).save()
 
 
-for key in data['white'][0:200]:
+for key in data['white']:
     WhiteCard.objects.create(**key).save()
 
-for key in data['black'][0:100]:
+for key in data['black']:
     BlackCard.objects.create(**key).save()
 
 print("Finished!")

@@ -29,6 +29,7 @@ class GameSessionViewSet(mixins.UpdateModelMixin,
                          mixins.ListModelMixin,
                          mixins.RetrieveModelMixin,
                          mixins.CreateModelMixin,
+                         mixins.DestroyModelMixin,
                          viewsets.GenericViewSet):
     queryset = GameSession.objects.all()
     serializer_class = GameSessionSerializer

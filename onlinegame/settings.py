@@ -9,8 +9,13 @@ https://docs.djangoproject.com/en/3.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
+
+# import django_heroku
+#
+# django_heroku.settings(locals())
+
+
 import logging
-import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -28,7 +33,9 @@ CORS_ALLOW_ALL_ORIGINS = True
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', '10.0.2.2', 'localhost', '127.0.0.1', '10.36.60.241', '*']
+
+ALLOWED_HOSTS = ['*']
+#ALLOWED_HOSTS = ['0.0.0.0', '10.0.2.2', 'localhost', '127.0.0.1', '10.36.60.241', '*']
 
 
 # Application definition
@@ -94,8 +101,12 @@ WSGI_APPLICATION = 'onlinegame.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'd84j45m7l7t40k',
+        'USER' : 'kdqeeyliwbtccc',
+        'PASSWORD' : '4b975ead66bf8fb41141c2b4580d6d519a36b6379c4f19f1a35edbe2a204f19e',
+        'HOST' : 'ec2-52-48-65-240.eu-west-1.compute.amazonaws.com',
+        'PORT' : '5432'
     }
 }
 
