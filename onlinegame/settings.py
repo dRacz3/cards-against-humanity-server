@@ -94,8 +94,12 @@ WSGI_APPLICATION = 'onlinegame.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'd84j45m7l7t40k',
+        'USER' : 'kdqeeyliwbtccc',
+        'PASSWORD' : '4b975ead66bf8fb41141c2b4580d6d519a36b6379c4f19f1a35edbe2a204f19e',
+        'HOST' : 'ec2-52-48-65-240.eu-west-1.compute.amazonaws.com',
+        'PORT' : '5432'
     }
 }
 
