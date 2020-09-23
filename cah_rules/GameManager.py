@@ -17,7 +17,7 @@ class UPDATE_COMMANDS:
     GAME_HAS_ENDED = "GAME_HAS_ENDED"
 
 
-MAX_ROUND_NUMBER = 10
+MAX_ROUND_NUMBER = 100
 
 def reverse_search_cards_by_text(submitted_card_texts: List[str]) -> List[WhiteCard]:
     """
@@ -45,9 +45,7 @@ def parse_winning_submission(black_card : BlackCard, submissions : CardSubmissio
         return text
 
     def replace_character_at_index(text, replacement):
-        print(f"replaceing ({text}) with {replacement}")
         asd = text.replace("_", replacement, 1)
-        print(asd)
         return asd
 
     submission_texts = [card.text for card in submissions.submitted_white_cards.all() ]
@@ -107,8 +105,8 @@ class GameManager:
             new_session = GameSession.objects.create(session_id=session_id)
             new_session.save()
             new_deck: SessionDeck = SessionDeck.objects.create(session=new_session)
-            [new_deck.white_cards.add(card) for card in DeckFactory().get_white_cards(50)]
-            [new_deck.black_cards.add(card) for card in DeckFactory().get_black_cards(50)]
+            [new_deck.white_cards.add(card) for card in DeckFactory().get_white_cards(len(WhiteCard.objects.all()))]
+            [new_deck.black_cards.add(card) for card in DeckFactory().get_black_cards(len(BlackCard.objects.all()))]
             new_deck.save()
 
             self.logger.info(f"Creating SessionPlayerList object for session:{session_id}..")
@@ -164,6 +162,8 @@ class GameManager:
             profile_data_for_submitting_player: GameRoundProfileData = GameRoundProfileData.objects.filter(
                 round=last_round,
                 user_profile__user=submitting_player).first()
+            # if profile_data_for_submitting_player is None:
+
             submission = retrieve_submission_for_round_data(profile_data_for_submitting_player)
             submitted_cards = reverse_search_cards_by_text(submitted_card_texts)
 
