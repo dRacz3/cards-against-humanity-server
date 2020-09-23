@@ -6,7 +6,7 @@ import logging
 
 from cah_rules.game_round_factory import GameRoundFactory
 from cardstore.deck_operations import DeckFactory
-from cardstore.models import WhiteCard
+from cardstore.models import WhiteCard, BlackCard
 from game_engine.models import User, Profile, GameSession, SessionDeck, SessionPlayerList, GameRound, \
     GameRoundProfileData, CardSubmission
 
@@ -17,7 +17,7 @@ class UPDATE_COMMANDS:
     GAME_HAS_ENDED = "GAME_HAS_ENDED"
 
 
-MAX_ROUND_NUMBER = 3
+MAX_ROUND_NUMBER = 10
 
 def reverse_search_cards_by_text(submitted_card_texts: List[str]) -> List[WhiteCard]:
     """
@@ -31,6 +31,28 @@ def reverse_search_cards_by_text(submitted_card_texts: List[str]) -> List[WhiteC
         else:
             raise ValueError(f"Could not find card with text: {cardtext}")
     return wcs
+
+def parse_winning_submission(black_card : BlackCard, submissions : CardSubmission):
+    def parse(text, submissions):
+        if text.find('_') == -1:
+            return f"{text} [{submissions[0]}]"
+        else:
+            count = 0
+            while text.find("_") != -1:
+                text = replace_character_at_index(text, f"{submissions[count]}")
+                count = count + 1
+
+        return text
+
+    def replace_character_at_index(text, replacement):
+        print(f"replaceing ({text}) with {replacement}")
+        asd = text.replace("_", replacement, 1)
+        print(asd)
+        return asd
+
+    submission_texts = [card.text for card in submissions.submitted_white_cards.all() ]
+    return parse(black_card.text, submission_texts)
+
 
 
 def fetch_last_round_for_session_id(session_id: str) -> Union[GameRound, None]:
@@ -130,7 +152,9 @@ class GameManager:
             self.logger.info(f"{submission.connected_game_round_profile.user_profile} has been selected as the winner!")
             last_round.winner = submission.connected_game_round_profile.user_profile
             last_round.save()
-            return str(last_round.winner.user)
+
+            winning_submission = parse_winning_submission(last_round.active_black_card, submission)
+            return f"{last_round.winner.user} with <br> <h4>{winning_submission}</h4>"
         else:
             raise ValueError(wsc.get_error_reason())
 

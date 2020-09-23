@@ -142,9 +142,12 @@ class HasUserSubmittedThisRound(APIView):
 
     def get(self, request, session_id):
         user = request.user
-        profile: GameRoundProfileData = GameRoundProfileData.objects.filter(user_profile__user=user,
-                                                                         round__session__session_id=session_id).last()
-
+        # Fetch the last active round, and the player data connected to it. We should not have a duplicate.. but anyway
+        last_round: GameRound = GameRound.objects.filter(session__session_id=session_id).last()
+        profile_query = GameRoundProfileData.objects.filter(user_profile__user=user, round = last_round)
+        if(len(profile_query) > 1):
+            print(f"MORE THAN 1 GameRoundProfileData for {user} in session {session_id}, just saying.. ")
+        profile : GameRoundProfileData = profile_query.first()
         if profile:
             if CardSubmission.objects.filter(connected_game_round_profile=profile).exists():
                 return Response(True ,status=status.HTTP_200_OK)
