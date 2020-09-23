@@ -4,7 +4,8 @@ from typing import List
 from django.contrib.auth.models import User
 from rest_framework.test import APITestCase
 
-from cah_rules.GameManager import GameManager, fetch_last_round_for_session_id
+from cah_rules.GameManager import GameManager
+from cah_rules.shortcuts import fetch_last_round_for_session_id
 from game_engine.models import GameSession, GameRound, SessionPlayerList, SessionDeck, GameRoundProfileData, \
     CardSubmission
 from cardstore.models import WhiteCard, BlackCard

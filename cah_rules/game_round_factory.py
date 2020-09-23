@@ -1,7 +1,7 @@
 import random
 
 from cardstore.deck_operations import get_white_cards_from_deck
-from game_engine.models import SessionPlayerList, GameRound, SessionDeck, GameRoundProfileData
+from game_engine.models import SessionPlayerList, GameRound, SessionDeck, GameRoundProfileData, Profile
 
 import logging
 
@@ -76,7 +76,7 @@ class GameRoundFactory:
         new_player_data.round = new_round
         new_player_data.save()
 
-    def create_new_player_data(self, deck, expected_count, newRound, player):
+    def create_new_player_data(self, deck, expected_count, newRound, player : Profile):
         user_cards = get_white_cards_from_deck(deck, expected_count)
         new_data = GameRoundProfileData.objects.create(user_profile=player,
                                                        current_points=0,
