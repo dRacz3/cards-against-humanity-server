@@ -3,9 +3,11 @@ import random
 from cardstore.deck_operations import get_white_cards_from_deck
 from game_engine.models import SessionPlayerList, GameRound, SessionDeck, GameRoundProfileData
 
+import logging
 
 class GameRoundFactory:
     def __init__(self, session):
+        self.logger = logging.getLogger(f"GRF-{session}")
         self.session = session
         self.players = SessionPlayerList.objects.filter(session=self.session).first()
 
@@ -43,12 +45,16 @@ class GameRoundFactory:
     def create_player_data(self, last_round, newRound):
         deck = SessionDeck.objects.filter(session=self.session).first()
         for player in self.players.profiles.all():
+            self.logger.info(f"Creating player new GameRoundProfileData for {player} ")
+
             expected_count = 10
             previous_player_data: GameRoundProfileData = GameRoundProfileData.objects.filter(round=last_round,
                                                                                              user_profile=player).first()
             if previous_player_data is not None:
+                self.logger.info("Previous round data found, copying and adding new cards")
                 self.create_player_data_from_previous_round(deck, expected_count, previous_player_data, newRound)
             else:
+                self.logger.info("Previous round data not found, creating a brand now one.")
                 self.create_new_player_data(deck, expected_count, newRound, player)
 
     def create_player_data_from_previous_round(self, deck, expected_count, previous_player_data, new_round):
@@ -57,7 +63,7 @@ class GameRoundFactory:
         new_player_data.pk = None
 
         new_player_data.save()
-        print(f"Remaining cards in deck: {deck.white_cards.count()}, while user has {cards_in_hand.count()} cards "
+        self.logger.info(f"Remaining cards in deck: {deck.white_cards.count()}, while user has {cards_in_hand.count()} cards "
                          f", adding {expected_count - cards_in_hand.count()} new cards to {new_player_data.user_profile.user}")
 
         user_cards = get_white_cards_from_deck(deck, expected_count - cards_in_hand.count())
@@ -79,3 +85,4 @@ class GameRoundFactory:
         for card in user_cards:
             new_data.cards.add(card)
         new_data.save()
+        self.logger.info(f"New player data saved {player}")
