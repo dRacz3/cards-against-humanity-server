@@ -14,15 +14,16 @@ class GameRoundFactory:
     def createNewRound(self):
         rounds = GameRound.objects.filter(session=self.session).order_by('roundNumber')
         deck = SessionDeck.objects.filter(session=self.session).first()
-        last_round = rounds.last()
+        last_round : GameRound = rounds.last()
         if not rounds.exists():
             roundNumber = 1
             tzar = None
         else:
             if(len(self.players.profiles.all()) > 1):
-                tzar = random.sample(list(self.players.profiles.exclude(user=last_round.tzar.user)), 1)[0]
+                self.logger.info(f"Next tzar is the last winner : {last_round.winner}")
+                tzar = last_round.winner
             else:
-                print("! Only one player mode")
+                self.logger.warning("! Only one player mode")
                 tzar = self.players.profiles.first()
             roundNumber = last_round.roundNumber + 1
             deck.black_cards.remove(last_round.active_black_card)

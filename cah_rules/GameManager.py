@@ -164,7 +164,7 @@ class GameManager:
         else:
             raise ValueError("Not enough cards submitted!")
 
-    def progress_game(self, session_id) -> None:
+    def progress_game(self, session_id) -> str:
         session: GameSession = GameSession.objects.get(session_id=session_id)
         rf = GameRoundFactory(session)
         rounds: QuerySet = GameRound.objects.filter(session__session_id=session_id)
