@@ -2,13 +2,13 @@
 
 import json
 
-with open('data.json', 'r') as file:
+with open('game_resource/hungarian_cards.json', 'r') as file:
     data = json.load(file)
 
 from cardstore.models import DeckMetaData, WhiteCard, BlackCard
-for key in data['metadata'].keys():
-    print("Using {key}")
-    DeckMetaData.objects.create(id_name = key, **data['metadata'][key]).save()
+# for key in data['metadata'].keys():
+#     print(f"Using {key}")
+#     DeckMetaData.objects.create(id_name = key, **data['metadata'][key]).save()
 
 
 for key in data['white']:
@@ -18,3 +18,4 @@ for key in data['black']:
     BlackCard.objects.create(**key).save()
 
 print("Finished!")
+

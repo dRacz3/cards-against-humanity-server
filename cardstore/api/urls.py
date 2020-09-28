@@ -1,12 +1,12 @@
-from django.urls import path
-from cardstore.api.views import BlackCardDetailsApiView, \
-    BlackCardListCreateApiView, WhiteCardDetailsApiView, WhiteCardListCreateApiView, DrawNWhiteCardsApiVeiw
+from django.urls import path, include
+from cardstore.api.views import WhiteCardViewSet, BlackCardViewSet
+
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r"white_cards", WhiteCardViewSet)
+router.register(r'black_cards', BlackCardViewSet)
 
 urlpatterns = [
-    path("whitecards/", WhiteCardListCreateApiView.as_view(), name="whitecards"),
-    path("whitecards/<int:pk>", WhiteCardDetailsApiView.as_view(), name="whitecard-details"),
-    path("whitecards/draw/<int:amount>", DrawNWhiteCardsApiVeiw.as_view(), name="draw-n-white-cards"),
-    path("blackcards/", BlackCardListCreateApiView.as_view(), name="blackcards"),
-    path("blackcards/<int:pk>", BlackCardDetailsApiView.as_view(), name="blackcard-details"),
-
+    path("", include(router.urls)),
 ]

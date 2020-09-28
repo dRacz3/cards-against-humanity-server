@@ -9,7 +9,8 @@ https://docs.djangoproject.com/en/3.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
-
+import logging
+import os
 from pathlib import Path
 import os
 
@@ -35,14 +36,25 @@ ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'corsheaders',
-    'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'cardstore'
+    'django.contrib.sites',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'rest_auth',
+    'rest_auth.registration',
+    'cardstore',
+    'channels',
+    'game_engine',
+    'rest_framework_swagger',
+    'drf_yasg'
 ]
 
 MIDDLEWARE = [
@@ -128,3 +140,47 @@ USE_TZ = True
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 STATIC_URL = '/static/'
+
+ASGI_APPLICATION = "onlinegame.routing.application"
+
+use_redis = False
+if use_redis:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": ["redis://:uHCGWDexNfSTiwPm2t53inbODj0XsYks@redis-16486.c8.us-east-1-3.ec2.cloud.redislabs.com:16486"],
+                "symmetric_encryption_keys": [SECRET_KEY],
+            },
+        },
+    }
+
+else:
+    print("""
+Using in InMemoryChannelLayer
+Not for Production Use. In-memory channel layers operate each process as a separate layer, which means no cross-process messaging is possible. 
+As the core value of channel layers to provide distributed messaging, in-memory usage will result in sub-optimal performance and data-loss in a multi-instance environment.""")
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer"
+        }
+    }
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(name)s][%(asctime)s][%(levelname)s][%(funcName)s] %(message)s')
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
+}
+
+SITE_ID = 1
+
+ACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_EMAIL_REQUIRED = (True)

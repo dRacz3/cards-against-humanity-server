@@ -1,6 +1,8 @@
 from django.contrib import admin
 
 from cardstore.models import WhiteCard, BlackCard, DeckMetaData
+from game_engine.models import CardSubmission
+
 
 class CardAdmin(admin.ModelAdmin):
     fieldsets = [
@@ -11,7 +13,7 @@ class CardAdmin(admin.ModelAdmin):
 
 class BlackCardAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None, {'fields': ['text', 'deck', 'icon']}),
+        (None, {'fields': ['text', 'deck', 'icon', 'pick']}),
     ]
     list_display = ('text', 'deck', 'icon', 'pick')
 
@@ -20,3 +22,4 @@ class BlackCardAdmin(admin.ModelAdmin):
 admin.site.register(WhiteCard, CardAdmin)
 admin.site.register(BlackCard, BlackCardAdmin)
 admin.site.register(DeckMetaData)
+admin.site.register(CardSubmission)
