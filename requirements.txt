@@ -5,3 +5,14 @@ django-filter
 requests
 django-cors-headers
 gunicorn
+channels
+channels-redis
+player
+tabulate
+django-allauth
+django-rest-auth
+pillow
+pyyaml
+uritemplate
+django-rest-swagger
+drf-yasg[validation]
