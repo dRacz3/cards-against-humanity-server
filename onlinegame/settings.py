@@ -31,6 +31,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+SWAGGER_SETTINGS = {
+    "DEFAULT_AUTO_SCHEMA_CLASS": "apps.api.inspectors.SwaggerAutoSchema"
+}
+
 
 # Application definition
 
@@ -179,6 +183,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10
 }
+
 
 SITE_ID = 1
 
